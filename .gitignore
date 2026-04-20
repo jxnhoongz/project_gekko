@@ -1,0 +1,26 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Node / bun
+node_modules/
+dist/
+build/
+*.log
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# Go build artifacts (future)
+/bin/
+/tmp/
+*.test
+*.out
+
+# Claude Code session artifacts
+.claude/sessions/
+.claude/cache/
