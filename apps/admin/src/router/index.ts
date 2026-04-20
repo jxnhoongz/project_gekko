@@ -19,6 +19,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'waitlist',      name: 'waitlist',  component: () => import('@/views/WaitlistView.vue') },
       { path: 'sales',         name: 'sales',     component: () => import('@/views/SalesView.vue') },
       { path: 'photos',        name: 'photos',    component: () => import('@/views/PhotosView.vue') },
+      { path: 'schema',        name: 'schema',    component: () => import('@/views/SchemaView.vue') },
       { path: 'settings',      name: 'settings',  component: () => import('@/views/SettingsView.vue') },
     ],
   },

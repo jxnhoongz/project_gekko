@@ -7,6 +7,7 @@ import {
   ClipboardList,
   DollarSign,
   Image,
+  Database,
   Settings,
   Menu,
   LogOut,
@@ -16,6 +17,8 @@ import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import LowPolyAccent from '@/components/art/LowPolyAccent.vue';
+import CommandPalette from '@/components/CommandPalette.vue';
+import { Search } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
@@ -23,6 +26,7 @@ const route = useRoute();
 const auth = useAuthStore();
 
 const mobileOpen = ref(false);
+const palette = ref<InstanceType<typeof CommandPalette> | null>(null);
 
 interface NavItem {
   name: string;
@@ -35,6 +39,7 @@ const nav: NavItem[] = [
   { name: 'waitlist',  label: 'Waitlist',  icon: ClipboardList },
   { name: 'sales',     label: 'Sales',     icon: DollarSign },
   { name: 'photos',    label: 'Photos',    icon: Image },
+  { name: 'schema',    label: 'Schema',    icon: Database },
   { name: 'settings',  label: 'Settings',  icon: Settings },
 ];
 
@@ -132,6 +137,28 @@ const pageTitle = computed(() => {
           </span>
         </div>
         <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="hidden sm:flex items-center gap-2 h-9 px-3 rounded-md border border-brand-cream-300 bg-white text-brand-dark-600 hover:bg-brand-cream-100 text-sm transition-colors"
+            aria-label="Open command palette"
+            @click="palette?.open()"
+          >
+            <Search class="size-4" />
+            <span>Quick jump</span>
+            <span class="inline-flex items-center gap-0.5 ml-2 text-[10px] text-brand-dark-500">
+              <kbd class="rounded border border-brand-cream-300 bg-brand-cream-50 px-1">⌘</kbd>
+              <kbd class="rounded border border-brand-cream-300 bg-brand-cream-50 px-1">K</kbd>
+            </span>
+          </button>
+          <Button
+            variant="ghost"
+            size="icon"
+            class="sm:hidden"
+            aria-label="Command palette"
+            @click="palette?.open()"
+          >
+            <Search class="size-5" />
+          </Button>
           <Button variant="ghost" size="icon" aria-label="Notifications">
             <Bell class="size-5" />
           </Button>
@@ -144,10 +171,17 @@ const pageTitle = computed(() => {
         class="flex-1 overflow-y-auto bg-brand-cream-50 px-4 sm:px-6 lg:px-8 py-6 lg:py-10"
       >
         <div class="mx-auto w-full max-w-7xl">
-          <RouterView />
+          <RouterView v-slot="{ Component, route: r }">
+            <transition name="route" mode="out-in">
+              <component :is="Component" :key="r.path" />
+            </transition>
+          </RouterView>
         </div>
       </main>
     </div>
+
+    <!-- Global command palette -->
+    <CommandPalette ref="palette" />
 
     <!-- Mobile drawer -->
     <Sheet v-model:open="mobileOpen">
