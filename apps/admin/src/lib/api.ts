@@ -3,7 +3,7 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 const TOKEN_STORAGE_KEY = 'gekko.admin.token';
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8420',
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? '',
   withCredentials: false,
 });
 

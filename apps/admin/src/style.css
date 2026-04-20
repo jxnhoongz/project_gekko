@@ -91,4 +91,20 @@
     font-weight: 400;
     letter-spacing: -0.01em;
   }
+
+  @keyframes gecko-float {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-6px); }
+  }
+  @keyframes brand-pulse-slow {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.7; }
+  }
+
+  .animate-float      { animation: gecko-float 6s ease-in-out infinite; }
+  .animate-pulse-slow { animation: brand-pulse-slow 4s ease-in-out infinite; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-float, .animate-pulse-slow { animation: none; }
+  }
 }
