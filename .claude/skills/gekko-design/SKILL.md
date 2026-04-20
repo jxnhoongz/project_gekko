@@ -102,7 +102,7 @@ Use `font-display` **sparingly** — only hero titles, major page headers, maybe
 
 ## Component system: shadcn-vue (themed)
 
-We use **[shadcn-vue](https://www.shadcn-vue.com/)** (Reka UI + Radix Vue) as the component baseline — same as `tos_admin/`. shadcn components are **unstyled primitives we own** (copied into `components/ui/`), so we restyle them with our brand tokens. Never use shadcn's default neutral palette.
+We use **[shadcn-vue](https://www.shadcn-vue.com/)** as the component baseline. It's built on **[Reka UI](https://reka-ui.com/)** (a Vue port of Radix UI primitives) and styled with **[Tailwind CSS](https://tailwindcss.com/)** + **class-variance-authority**. Components are copied (not imported) into `src/components/ui/`, so we own them and restyle freely with our brand tokens. Never use shadcn's default neutral palette.
 
 **Install target** (on the Linux setup):
 ```bash
@@ -173,7 +173,7 @@ These rules apply on top of shadcn primitives:
 - For Table, wrap in `<Card>` for the magazine-card feel, or use a full-bleed table with cream-200 dividers.
 
 #### Forms
-- Pair shadcn `<Form>` primitives with **vee-validate + zod** (same as `tos_admin/`).
+- Pair shadcn `<Form>` primitives with **vee-validate** (form state) + **zod** (schema validation). Install: `bun add vee-validate @vee-validate/zod zod`.
 - Layout: labels above fields, `space-y-4` between fields, submit button bottom-right with `variant="default"`, cancel as ghost to its left.
 
 ### Patterns: dashboards, lists, forms
@@ -222,7 +222,7 @@ Existing animations in `tailwind.config.js`:
 
 ## Iconography
 
-- **Library**: `lucide-vue-next` (same as `tos_admin/`, default for shadcn-vue). Line style, consistent stroke.
+- **Library**: `lucide-vue-next` — the default icon set recommended by shadcn-vue. Install: `bun add lucide-vue-next`. Line style, consistent stroke.
 - **Stroke**: `stroke-width="2"` (lucide default). Only adjust for tiny sizes (`stroke-width="1.75"` at `w-4`).
 - **Size**: `w-6 h-6` for stat icons, `w-5 h-5` for buttons/inline, `w-4 h-4` for tiny meta.
 - **Color**: `text-accent-foreground` (brand-gold-700) or `text-muted-foreground`. Never pure black/white.
@@ -258,9 +258,9 @@ When creating faceted/low-poly SVG illustrations (empty states, section decorati
 
 When in doubt, mimic these:
 
-- **`apps/admin/src/views/LoginView.vue`** — The gold standard for hero aesthetic (Three.js + glass card). The card will be re-implemented with shadcn-vue `<Card>` primitives but the *look* stays identical.
-- **`apps/admin/src/components/AnimatedBackground.vue`** — Reference Three.js low-poly scene. Reuse for other hero/landing surfaces.
-- **TOS admin (`tos_admin/`)** — Reference for shadcn-vue component installation, vue-query / vue-table patterns, and form setups. Copy patterns, **not** palette.
+- **`apps/admin/src/views/LoginView.vue`** — The gold standard for hero aesthetic (Three.js + glass card). Re-implemented with shadcn-vue `<Card>` primitives but the *look* stays identical.
+- **`apps/admin/src/components/AnimatedBackground.vue`** — Reference Three.js low-poly scene (animated wave). Reuse for other hero/landing surfaces.
+- **[shadcn-vue docs](https://www.shadcn-vue.com/docs)** and **[reka-ui docs](https://reka-ui.com/)** — for component installation steps and primitive APIs. Copy the patterns, **not** the color palette.
 
 ## When this skill applies
 
