@@ -1,4 +1,4 @@
-.PHONY: help db-up db-down db-logs migrate migrate-status migrate-down sqlc dev-backend dev-admin dev-storefront
+.PHONY: help db-up db-down db-logs migrate migrate-status migrate-down sqlc dev-backend dev-admin dev-storefront seed
 
 help:  ## Show this help
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -34,3 +34,7 @@ dev-admin:  ## Start admin dev server
 
 dev-storefront:  ## Start storefront dev server
 	bun run dev:storefront
+
+seed:  ## Seed first admin (ADMIN_EMAIL=... ADMIN_PASSWORD=... ADMIN_NAME=Zen make seed)
+	cd backend && go run ./cmd/gekko-seed \
+	  -email "$(ADMIN_EMAIL)" -password "$(ADMIN_PASSWORD)" -name "$(ADMIN_NAME)"
