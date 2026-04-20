@@ -66,6 +66,7 @@ func main() {
 
 	apihttp.MountAuth(r, pool, signer)
 	apihttp.MountWaitlist(r, pool, signer)
+	apihttp.MountSchema(r, pool, signer)
 
 	log.Info().Msgf("listening on :%s", cfg.Port)
 	if err := nethttp.ListenAndServe(":"+cfg.Port, r); err != nil {
