@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"net/http"
+	nethttp "net/http"
 	"os"
 	"time"
 
@@ -13,27 +13,38 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+
+	"github.com/jxnhoongz/project_gekko/backend/internal/auth"
+	"github.com/jxnhoongz/project_gekko/backend/internal/config"
+	apihttp "github.com/jxnhoongz/project_gekko/backend/internal/http"
 )
 
 func main() {
 	_ = godotenv.Load(".env.local")
 
-	if os.Getenv("LOG_LEVEL") == "debug" {
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal().Err(err).Msg("config load failed")
+	}
+
+	if cfg.LogLevel == "debug" {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.Kitchen})
 	}
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, os.Getenv("DB_URL"))
+	pool, err := pgxpool.New(ctx, cfg.DBURL)
 	if err != nil {
 		log.Fatal().Err(err).Msg("db connection failed")
 	}
 	defer pool.Close()
 
+	signer := auth.NewJWTSigner(cfg.JWTSecret, time.Duration(cfg.JWTTTLHours)*time.Hour)
+
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID, chimw.RealIP, chimw.Logger, chimw.Recoverer)
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   splitCSV(os.Getenv("CORS_ORIGINS")),
+		AllowedOrigins:   cfg.CORSOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
 		ExposedHeaders:   []string{"Link"},
@@ -41,47 +52,22 @@ func main() {
 		MaxAge:           300,
 	}))
 
-	r.Get("/health", func(w http.ResponseWriter, req *http.Request) {
+	r.Get("/health", func(w nethttp.ResponseWriter, req *nethttp.Request) {
 		if err := pool.Ping(req.Context()); err != nil {
-			http.Error(w, `{"status":"db down"}`, http.StatusServiceUnavailable)
+			nethttp.Error(w, `{"status":"db down"}`, nethttp.StatusServiceUnavailable)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"status":"healthy"}`))
+		_, _ = w.Write([]byte(`{"status":"healthy"}`))
 	})
 
-	uploadDir := os.Getenv("UPLOAD_DIR")
-	if uploadDir == "" {
-		uploadDir = "./uploads"
-	}
-	fs := http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadDir)))
+	fs := nethttp.StripPrefix("/uploads/", nethttp.FileServer(nethttp.Dir(cfg.UploadDir)))
 	r.Handle("/uploads/*", fs)
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8420"
-	}
-	log.Info().Msgf("listening on :%s", port)
-	if err := http.ListenAndServe(":"+port, r); err != nil {
+	r.Mount("/", apihttp.NewAuthRouter(pool, signer))
+
+	log.Info().Msgf("listening on :%s", cfg.Port)
+	if err := nethttp.ListenAndServe(":"+cfg.Port, r); err != nil {
 		log.Fatal().Err(err).Send()
 	}
-}
-
-func splitCSV(s string) []string {
-	out := []string{}
-	cur := ""
-	for _, c := range s {
-		if c == ',' {
-			if cur != "" {
-				out = append(out, cur)
-			}
-			cur = ""
-			continue
-		}
-		cur += string(c)
-	}
-	if cur != "" {
-		out = append(out, cur)
-	}
-	return out
 }
