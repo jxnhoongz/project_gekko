@@ -20,19 +20,15 @@ type authDeps struct {
 	signer *auth.JWTSigner
 }
 
-// NewAuthRouter mounts /api/auth/* (login public, me protected).
-func NewAuthRouter(pool *pgxpool.Pool, signer *auth.JWTSigner) http.Handler {
+// MountAuth registers /api/auth/* routes on the given router.
+func MountAuth(r chi.Router, pool *pgxpool.Pool, signer *auth.JWTSigner) {
 	d := &authDeps{pool: pool, q: db.New(pool), signer: signer}
 
-	r := chi.NewRouter()
 	r.Post("/api/auth/login", d.login)
-
-	protected := chi.NewRouter()
-	protected.Use(RequireAuth(signer))
-	protected.Get("/api/auth/me", d.me)
-
-	r.Mount("/", protected)
-	return r
+	r.Group(func(pr chi.Router) {
+		pr.Use(RequireAuth(signer))
+		pr.Get("/api/auth/me", d.me)
+	})
 }
 
 type loginReq struct {

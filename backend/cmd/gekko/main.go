@@ -64,7 +64,8 @@ func main() {
 	fs := nethttp.StripPrefix("/uploads/", nethttp.FileServer(nethttp.Dir(cfg.UploadDir)))
 	r.Handle("/uploads/*", fs)
 
-	r.Mount("/", apihttp.NewAuthRouter(pool, signer))
+	apihttp.MountAuth(r, pool, signer)
+	apihttp.MountWaitlist(r, pool, signer)
 
 	log.Info().Msgf("listening on :%s", cfg.Port)
 	if err := nethttp.ListenAndServe(":"+cfg.Port, r); err != nil {

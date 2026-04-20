@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
@@ -44,8 +45,9 @@ func testSetup(t *testing.T) (http.Handler, string, string) {
 	})
 
 	signer := auth.NewJWTSigner("test-secret", time.Hour)
-	router := NewAuthRouter(pool, signer)
-	return router, email, plain
+	r := chi.NewRouter()
+	MountAuth(r, pool, signer)
+	return r, email, plain
 }
 
 func TestLogin_happyPath(t *testing.T) {
