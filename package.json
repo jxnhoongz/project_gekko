@@ -1,0 +1,12 @@
+{
+  "name": "project-gekko",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "dev:admin":        "bun --cwd apps/admin run dev",
+    "dev:storefront":   "bun --cwd apps/storefront run dev",
+    "build:admin":      "bun --cwd apps/admin run build",
+    "build:storefront": "bun --cwd apps/storefront run build"
+  }
+}

@@ -15,12 +15,20 @@ build/
 .env.local
 .env.*.local
 
-# Go build artifacts (future)
+# Go build artifacts
 /bin/
 /tmp/
 *.test
 *.out
+backend/tmp/
+backend/gekko
+backend/gekko-seed
+backend/uploads/*
+!backend/uploads/.gitkeep
 
 # Claude Code session artifacts
 .claude/sessions/
 .claude/cache/
+
+# MCP config (contains secrets)
+.mcp.json
