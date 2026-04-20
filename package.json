@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "workspaces": ["apps/*"],
   "scripts": {
-    "dev:admin":        "bun --cwd apps/admin run dev",
-    "dev:storefront":   "bun --cwd apps/storefront run dev",
-    "build:admin":      "bun --cwd apps/admin run build",
-    "build:storefront": "bun --cwd apps/storefront run build"
+    "dev:admin":        "cd apps/admin && bun run dev",
+    "dev:storefront":   "cd apps/storefront && bun run dev",
+    "build:admin":      "cd apps/admin && bun run build",
+    "build:storefront": "cd apps/storefront && bun run build"
   }
 }

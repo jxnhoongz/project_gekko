@@ -1,0 +1,91 @@
+{
+    "$schema": "https://cdn.statically.io/gh/nguyenngoclongdev/cdn/main/schema/v11/terminal-keeper.json",
+    "active": "default",
+    "activateOnStartup": true,
+    "keepExistingTerminals": false,
+    "noClear": true,
+    "theme": "default",
+    "sessions": {
+        "default": [
+            {
+                "name": "db",
+                "icon": "database",
+                "color": "terminal.ansiBlue",
+                "autoExecuteCommands": true,
+                "commands": [
+                    "docker compose -f infra/docker-compose.dev.yml up -d"
+                ]
+            },
+            [
+                {
+                    "name": "backend",
+                    "icon": "server-process",
+                    "color": "terminal.ansiGreen",
+                    "autoExecuteCommands": true,
+                    "commands": [
+                        "cd backend && air"
+                    ]
+                },
+                {
+                    "name": "admin",
+                    "icon": "browser",
+                    "color": "terminal.ansiMagenta",
+                    "autoExecuteCommands": true,
+                    "commands": [
+                        "cd apps/admin && bun run dev"
+                    ]
+                }
+            ],
+            {
+                "name": "claude",
+                "icon": "comment-discussion",
+                "color": "terminal.ansiCyan",
+                "autoExecuteCommands": true,
+                "commands": [
+                    "claude --continue --name gekko --channels plugin:telegram@claude-plugins-official"
+                ]
+            },
+            {
+                "name": "shell",
+                "icon": "terminal",
+                "color": "terminal.ansiYellow",
+                "autoExecuteCommands": false,
+                "commands": []
+            }
+        ],
+        "test": [
+            [
+                {
+                    "name": "backend-tests",
+                    "icon": "beaker",
+                    "color": "terminal.ansiGreen",
+                    "autoExecuteCommands": true,
+                    "commands": [
+                        "cd backend && go test ./..."
+                    ]
+                },
+                {
+                    "name": "admin-tests",
+                    "icon": "beaker",
+                    "color": "terminal.ansiMagenta",
+                    "autoExecuteCommands": true,
+                    "commands": [
+                        "cd apps/admin && bun run test"
+                    ]
+                }
+            ]
+        ],
+        "db-only": [
+            {
+                "name": "db + logs",
+                "icon": "database",
+                "color": "terminal.ansiBlue",
+                "autoExecuteCommands": true,
+                "commands": [
+                    "docker compose -f infra/docker-compose.dev.yml up -d",
+                    "docker compose -f infra/docker-compose.dev.yml logs -f postgres"
+                ]
+            }
+        ]
+    }
+}
