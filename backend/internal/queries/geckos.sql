@@ -1,7 +1,7 @@
 -- name: ListGeckos :many
 SELECT
   g.id, g.code, g.name, g.species_id, g.sex, g.hatch_date, g.acquired_date,
-  g.status, g.sire_id, g.dam_id, g.list_price_usd, g.notes,
+  g.status, g.sire_id, g.dam_id, g.notes,
   g.created_at, g.updated_at,
   sp.code AS species_code,
   sp.common_name AS species_common_name
@@ -12,7 +12,7 @@ ORDER BY g.code;
 -- name: GetGeckoByID :one
 SELECT
   g.id, g.code, g.name, g.species_id, g.sex, g.hatch_date, g.acquired_date,
-  g.status, g.sire_id, g.dam_id, g.list_price_usd, g.notes,
+  g.status, g.sire_id, g.dam_id, g.notes,
   g.created_at, g.updated_at,
   sp.code AS species_code,
   sp.common_name AS species_common_name
@@ -24,7 +24,7 @@ LIMIT 1;
 -- name: GetGeckoByCode :one
 SELECT
   g.id, g.code, g.name, g.species_id, g.sex, g.hatch_date, g.acquired_date,
-  g.status, g.sire_id, g.dam_id, g.list_price_usd, g.notes,
+  g.status, g.sire_id, g.dam_id, g.notes,
   g.created_at, g.updated_at,
   sp.code AS species_code,
   sp.common_name AS species_common_name
@@ -44,12 +44,12 @@ GROUP BY status;
 -- name: CreateGecko :one
 INSERT INTO geckos (
   code, name, species_id, sex, hatch_date, acquired_date,
-  status, sire_id, dam_id, list_price_usd, notes
+  status, sire_id, dam_id, notes
 )
-VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, 'AVAILABLE'::gecko_status), $8, $9, $10, $11)
+VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, 'AVAILABLE'::gecko_status), $8, $9, $10)
 RETURNING
   id, code, name, species_id, sex, hatch_date, acquired_date,
-  status, sire_id, dam_id, list_price_usd, notes,
+  status, sire_id, dam_id, notes,
   created_at, updated_at;
 
 -- name: UpdateGecko :one
@@ -62,13 +62,12 @@ UPDATE geckos SET
   status         = $7,
   sire_id        = $8,
   dam_id         = $9,
-  list_price_usd = $10,
-  notes          = $11,
+  notes          = $10,
   updated_at     = NOW()
 WHERE id = $1
 RETURNING
   id, code, name, species_id, sex, hatch_date, acquired_date,
-  status, sire_id, dam_id, list_price_usd, notes,
+  status, sire_id, dam_id, notes,
   created_at, updated_at;
 
 -- name: DeleteGecko :exec

@@ -56,27 +56,26 @@ func (q *Queries) CountGeckosByStatus(ctx context.Context) ([]CountGeckosByStatu
 const createGecko = `-- name: CreateGecko :one
 INSERT INTO geckos (
   code, name, species_id, sex, hatch_date, acquired_date,
-  status, sire_id, dam_id, list_price_usd, notes
+  status, sire_id, dam_id, notes
 )
-VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, 'AVAILABLE'::gecko_status), $8, $9, $10, $11)
+VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, 'AVAILABLE'::gecko_status), $8, $9, $10)
 RETURNING
   id, code, name, species_id, sex, hatch_date, acquired_date,
-  status, sire_id, dam_id, list_price_usd, notes,
+  status, sire_id, dam_id, notes,
   created_at, updated_at
 `
 
 type CreateGeckoParams struct {
-	Code         string         `json:"code"`
-	Name         pgtype.Text    `json:"name"`
-	SpeciesID    int32          `json:"species_id"`
-	Sex          Sex            `json:"sex"`
-	HatchDate    pgtype.Date    `json:"hatch_date"`
-	AcquiredDate pgtype.Date    `json:"acquired_date"`
-	Column7      interface{}    `json:"column_7"`
-	SireID       pgtype.Int4    `json:"sire_id"`
-	DamID        pgtype.Int4    `json:"dam_id"`
-	ListPriceUsd pgtype.Numeric `json:"list_price_usd"`
-	Notes        pgtype.Text    `json:"notes"`
+	Code         string      `json:"code"`
+	Name         pgtype.Text `json:"name"`
+	SpeciesID    int32       `json:"species_id"`
+	Sex          Sex         `json:"sex"`
+	HatchDate    pgtype.Date `json:"hatch_date"`
+	AcquiredDate pgtype.Date `json:"acquired_date"`
+	Column7      interface{} `json:"column_7"`
+	SireID       pgtype.Int4 `json:"sire_id"`
+	DamID        pgtype.Int4 `json:"dam_id"`
+	Notes        pgtype.Text `json:"notes"`
 }
 
 func (q *Queries) CreateGecko(ctx context.Context, arg CreateGeckoParams) (Gecko, error) {
@@ -90,7 +89,6 @@ func (q *Queries) CreateGecko(ctx context.Context, arg CreateGeckoParams) (Gecko
 		arg.Column7,
 		arg.SireID,
 		arg.DamID,
-		arg.ListPriceUsd,
 		arg.Notes,
 	)
 	var i Gecko
@@ -105,7 +103,6 @@ func (q *Queries) CreateGecko(ctx context.Context, arg CreateGeckoParams) (Gecko
 		&i.Status,
 		&i.SireID,
 		&i.DamID,
-		&i.ListPriceUsd,
 		&i.Notes,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -134,7 +131,7 @@ func (q *Queries) DeleteGenesForGecko(ctx context.Context, geckoID int32) error 
 const getGeckoByCode = `-- name: GetGeckoByCode :one
 SELECT
   g.id, g.code, g.name, g.species_id, g.sex, g.hatch_date, g.acquired_date,
-  g.status, g.sire_id, g.dam_id, g.list_price_usd, g.notes,
+  g.status, g.sire_id, g.dam_id, g.notes,
   g.created_at, g.updated_at,
   sp.code AS species_code,
   sp.common_name AS species_common_name
@@ -155,7 +152,6 @@ type GetGeckoByCodeRow struct {
 	Status            GeckoStatus      `json:"status"`
 	SireID            pgtype.Int4      `json:"sire_id"`
 	DamID             pgtype.Int4      `json:"dam_id"`
-	ListPriceUsd      pgtype.Numeric   `json:"list_price_usd"`
 	Notes             pgtype.Text      `json:"notes"`
 	CreatedAt         pgtype.Timestamp `json:"created_at"`
 	UpdatedAt         pgtype.Timestamp `json:"updated_at"`
@@ -177,7 +173,6 @@ func (q *Queries) GetGeckoByCode(ctx context.Context, code string) (GetGeckoByCo
 		&i.Status,
 		&i.SireID,
 		&i.DamID,
-		&i.ListPriceUsd,
 		&i.Notes,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -190,7 +185,7 @@ func (q *Queries) GetGeckoByCode(ctx context.Context, code string) (GetGeckoByCo
 const getGeckoByID = `-- name: GetGeckoByID :one
 SELECT
   g.id, g.code, g.name, g.species_id, g.sex, g.hatch_date, g.acquired_date,
-  g.status, g.sire_id, g.dam_id, g.list_price_usd, g.notes,
+  g.status, g.sire_id, g.dam_id, g.notes,
   g.created_at, g.updated_at,
   sp.code AS species_code,
   sp.common_name AS species_common_name
@@ -211,7 +206,6 @@ type GetGeckoByIDRow struct {
 	Status            GeckoStatus      `json:"status"`
 	SireID            pgtype.Int4      `json:"sire_id"`
 	DamID             pgtype.Int4      `json:"dam_id"`
-	ListPriceUsd      pgtype.Numeric   `json:"list_price_usd"`
 	Notes             pgtype.Text      `json:"notes"`
 	CreatedAt         pgtype.Timestamp `json:"created_at"`
 	UpdatedAt         pgtype.Timestamp `json:"updated_at"`
@@ -233,7 +227,6 @@ func (q *Queries) GetGeckoByID(ctx context.Context, id int32) (GetGeckoByIDRow, 
 		&i.Status,
 		&i.SireID,
 		&i.DamID,
-		&i.ListPriceUsd,
 		&i.Notes,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -246,7 +239,7 @@ func (q *Queries) GetGeckoByID(ctx context.Context, id int32) (GetGeckoByIDRow, 
 const listGeckos = `-- name: ListGeckos :many
 SELECT
   g.id, g.code, g.name, g.species_id, g.sex, g.hatch_date, g.acquired_date,
-  g.status, g.sire_id, g.dam_id, g.list_price_usd, g.notes,
+  g.status, g.sire_id, g.dam_id, g.notes,
   g.created_at, g.updated_at,
   sp.code AS species_code,
   sp.common_name AS species_common_name
@@ -266,7 +259,6 @@ type ListGeckosRow struct {
 	Status            GeckoStatus      `json:"status"`
 	SireID            pgtype.Int4      `json:"sire_id"`
 	DamID             pgtype.Int4      `json:"dam_id"`
-	ListPriceUsd      pgtype.Numeric   `json:"list_price_usd"`
 	Notes             pgtype.Text      `json:"notes"`
 	CreatedAt         pgtype.Timestamp `json:"created_at"`
 	UpdatedAt         pgtype.Timestamp `json:"updated_at"`
@@ -294,7 +286,6 @@ func (q *Queries) ListGeckos(ctx context.Context) ([]ListGeckosRow, error) {
 			&i.Status,
 			&i.SireID,
 			&i.DamID,
-			&i.ListPriceUsd,
 			&i.Notes,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -339,28 +330,26 @@ UPDATE geckos SET
   status         = $7,
   sire_id        = $8,
   dam_id         = $9,
-  list_price_usd = $10,
-  notes          = $11,
+  notes          = $10,
   updated_at     = NOW()
 WHERE id = $1
 RETURNING
   id, code, name, species_id, sex, hatch_date, acquired_date,
-  status, sire_id, dam_id, list_price_usd, notes,
+  status, sire_id, dam_id, notes,
   created_at, updated_at
 `
 
 type UpdateGeckoParams struct {
-	ID           int32          `json:"id"`
-	Name         pgtype.Text    `json:"name"`
-	SpeciesID    int32          `json:"species_id"`
-	Sex          Sex            `json:"sex"`
-	HatchDate    pgtype.Date    `json:"hatch_date"`
-	AcquiredDate pgtype.Date    `json:"acquired_date"`
-	Status       GeckoStatus    `json:"status"`
-	SireID       pgtype.Int4    `json:"sire_id"`
-	DamID        pgtype.Int4    `json:"dam_id"`
-	ListPriceUsd pgtype.Numeric `json:"list_price_usd"`
-	Notes        pgtype.Text    `json:"notes"`
+	ID           int32       `json:"id"`
+	Name         pgtype.Text `json:"name"`
+	SpeciesID    int32       `json:"species_id"`
+	Sex          Sex         `json:"sex"`
+	HatchDate    pgtype.Date `json:"hatch_date"`
+	AcquiredDate pgtype.Date `json:"acquired_date"`
+	Status       GeckoStatus `json:"status"`
+	SireID       pgtype.Int4 `json:"sire_id"`
+	DamID        pgtype.Int4 `json:"dam_id"`
+	Notes        pgtype.Text `json:"notes"`
 }
 
 func (q *Queries) UpdateGecko(ctx context.Context, arg UpdateGeckoParams) (Gecko, error) {
@@ -374,7 +363,6 @@ func (q *Queries) UpdateGecko(ctx context.Context, arg UpdateGeckoParams) (Gecko
 		arg.Status,
 		arg.SireID,
 		arg.DamID,
-		arg.ListPriceUsd,
 		arg.Notes,
 	)
 	var i Gecko
@@ -389,7 +377,6 @@ func (q *Queries) UpdateGecko(ctx context.Context, arg UpdateGeckoParams) (Gecko
 		&i.Status,
 		&i.SireID,
 		&i.DamID,
-		&i.ListPriceUsd,
 		&i.Notes,
 		&i.CreatedAt,
 		&i.UpdatedAt,

@@ -86,7 +86,6 @@ type geckoDTO struct {
 	Status        string        `json:"status"`
 	SireID        *int32        `json:"sire_id"`
 	DamID         *int32        `json:"dam_id"`
-	ListPriceUsd  *string       `json:"list_price_usd"`
 	Notes         string        `json:"notes"`
 	CreatedAt     time.Time     `json:"created_at"`
 	Traits        []geckoGeneDTO `json:"traits"`
@@ -221,7 +220,6 @@ func (d *geckosDeps) listGeckos(w http.ResponseWriter, r *http.Request) {
 			Status:        string(g.Status),
 			SireID:        int32OrNil(g.SireID),
 			DamID:         int32OrNil(g.DamID),
-			ListPriceUsd:  numericOrNil(g.ListPriceUsd),
 			Notes:         textOrEmpty(g.Notes),
 			CreatedAt:     g.CreatedAt.Time,
 			Traits:        traits,
@@ -299,7 +297,6 @@ func (d *geckosDeps) getGecko(w http.ResponseWriter, r *http.Request) {
 		Status:        string(row.Status),
 		SireID:        int32OrNil(row.SireID),
 		DamID:         int32OrNil(row.DamID),
-		ListPriceUsd:  numericOrNil(row.ListPriceUsd),
 		Notes:         textOrEmpty(row.Notes),
 		CreatedAt:     row.CreatedAt.Time,
 		Traits:        traitsOut,
@@ -360,7 +357,6 @@ type createGeckoReq struct {
 	Status       string            `json:"status"`
 	SireID       *int32            `json:"sire_id"`
 	DamID        *int32            `json:"dam_id"`
-	ListPriceUsd string            `json:"list_price_usd"`
 	Notes        string            `json:"notes"`
 	Traits       []geckoTraitInput `json:"traits"`
 }
@@ -472,11 +468,6 @@ func (d *geckosDeps) createGecko(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid acquired_date"})
 		return
 	}
-	price, err := parseNumeric(req.ListPriceUsd)
-	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid list_price_usd"})
-		return
-	}
 
 	ctx := r.Context()
 	tx, err := d.pool.Begin(ctx)
@@ -509,7 +500,6 @@ func (d *geckosDeps) createGecko(w http.ResponseWriter, r *http.Request) {
 		Column7:      statusCol,
 		SireID:       pgInt4(req.SireID),
 		DamID:        pgInt4(req.DamID),
-		ListPriceUsd: price,
 		Notes:        pgText(req.Notes),
 	})
 	if err != nil {
@@ -584,11 +574,6 @@ func (d *geckosDeps) updateGecko(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid acquired_date"})
 		return
 	}
-	price, err := parseNumeric(req.ListPriceUsd)
-	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid list_price_usd"})
-		return
-	}
 
 	ctx := r.Context()
 	tx, err := d.pool.Begin(ctx)
@@ -609,7 +594,6 @@ func (d *geckosDeps) updateGecko(w http.ResponseWriter, r *http.Request) {
 		Status:       status,
 		SireID:       pgInt4(req.SireID),
 		DamID:        pgInt4(req.DamID),
-		ListPriceUsd: price,
 		Notes:        pgText(req.Notes),
 	})
 	if err != nil {

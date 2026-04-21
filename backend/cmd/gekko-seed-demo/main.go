@@ -39,7 +39,6 @@ type geckoSeed struct {
 	sex       db.Sex
 	hatchDate string // "2023-06-12"
 	status    db.GeckoStatus
-	priceUsd  string // "180.00" or "" for null
 	notes     string
 	traits    []traitRef
 }
@@ -105,8 +104,7 @@ var seedGeckos = []geckoSeed{
 	{
 		code: "ZGCR-2026-002", name: "Suri", species: db.SpeciesCodeCR, sex: db.SexF,
 		hatchDate: "2024-03-08", status: db.GeckoStatusAVAILABLE,
-		priceUsd: "180.00",
-		notes:    "High-spot dalmatian, good eater.",
+		notes: "High-spot dalmatian, good eater.",
 		traits:   []traitRef{{"Dalmatian", db.ZygosityHOM}},
 	},
 	{
@@ -118,8 +116,7 @@ var seedGeckos = []geckoSeed{
 	{
 		code: "ZGLP-2026-003", name: "Veasna", species: db.SpeciesCodeLP, sex: db.SexF,
 		hatchDate: "2024-05-22", status: db.GeckoStatusHOLD,
-		priceUsd: "220.00",
-		notes:    "On hold for Dara until May 5.",
+		notes: "On hold for Dara until May 5.",
 		traits:   []traitRef{{"Bell Albino", db.ZygosityHOM}},
 	},
 }
@@ -210,12 +207,6 @@ func main() {
 		if err != nil {
 			die("parse hatch date "+g.hatchDate, err)
 		}
-		price := pgtype.Numeric{}
-		if g.priceUsd != "" {
-			if err := price.Scan(g.priceUsd); err != nil {
-				die("parse price "+g.priceUsd, err)
-			}
-		}
 		created, err := q.CreateGecko(ctx, db.CreateGeckoParams{
 			Code:         g.code,
 			Name:         pgtype.Text{String: g.name, Valid: true},
@@ -226,7 +217,6 @@ func main() {
 			Column7:      db.NullGeckoStatus{GeckoStatus: g.status, Valid: true},
 			SireID:       pgtype.Int4{Valid: false},
 			DamID:        pgtype.Int4{Valid: false},
-			ListPriceUsd: price,
 			Notes:        pgtype.Text{String: g.notes, Valid: g.notes != ""},
 		})
 		if err != nil {

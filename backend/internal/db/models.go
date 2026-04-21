@@ -57,6 +57,94 @@ func (ns NullGeckoStatus) Value() (driver.Value, error) {
 	return string(ns.GeckoStatus), nil
 }
 
+type ListingStatus string
+
+const (
+	ListingStatusDRAFT    ListingStatus = "DRAFT"
+	ListingStatusLISTED   ListingStatus = "LISTED"
+	ListingStatusRESERVED ListingStatus = "RESERVED"
+	ListingStatusSOLD     ListingStatus = "SOLD"
+	ListingStatusARCHIVED ListingStatus = "ARCHIVED"
+)
+
+func (e *ListingStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ListingStatus(s)
+	case string:
+		*e = ListingStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ListingStatus: %T", src)
+	}
+	return nil
+}
+
+type NullListingStatus struct {
+	ListingStatus ListingStatus `json:"listing_status"`
+	Valid         bool          `json:"valid"` // Valid is true if ListingStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullListingStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.ListingStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.ListingStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullListingStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.ListingStatus), nil
+}
+
+type ListingType string
+
+const (
+	ListingTypeGECKO   ListingType = "GECKO"
+	ListingTypePACKAGE ListingType = "PACKAGE"
+	ListingTypeSUPPLY  ListingType = "SUPPLY"
+)
+
+func (e *ListingType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ListingType(s)
+	case string:
+		*e = ListingType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ListingType: %T", src)
+	}
+	return nil
+}
+
+type NullListingType struct {
+	ListingType ListingType `json:"listing_type"`
+	Valid       bool        `json:"valid"` // Valid is true if ListingType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullListingType) Scan(value interface{}) error {
+	if value == nil {
+		ns.ListingType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.ListingType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullListingType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.ListingType), nil
+}
+
 type MediaType string
 
 const (
@@ -249,7 +337,6 @@ type Gecko struct {
 	Status       GeckoStatus      `json:"status"`
 	SireID       pgtype.Int4      `json:"sire_id"`
 	DamID        pgtype.Int4      `json:"dam_id"`
-	ListPriceUsd pgtype.Numeric   `json:"list_price_usd"`
 	Notes        pgtype.Text      `json:"notes"`
 	CreatedAt    pgtype.Timestamp `json:"created_at"`
 	UpdatedAt    pgtype.Timestamp `json:"updated_at"`
@@ -272,6 +359,36 @@ type GeneticDictionary struct {
 	IsDominant  bool             `json:"is_dominant"`
 	CreatedAt   pgtype.Timestamp `json:"created_at"`
 	UpdatedAt   pgtype.Timestamp `json:"updated_at"`
+}
+
+type Listing struct {
+	ID            int32            `json:"id"`
+	Sku           pgtype.Text      `json:"sku"`
+	Type          ListingType      `json:"type"`
+	Title         string           `json:"title"`
+	Description   pgtype.Text      `json:"description"`
+	PriceUsd      pgtype.Numeric   `json:"price_usd"`
+	DepositUsd    pgtype.Numeric   `json:"deposit_usd"`
+	Status        ListingStatus    `json:"status"`
+	CoverPhotoUrl pgtype.Text      `json:"cover_photo_url"`
+	ListedAt      pgtype.Timestamp `json:"listed_at"`
+	SoldAt        pgtype.Timestamp `json:"sold_at"`
+	ArchivedAt    pgtype.Timestamp `json:"archived_at"`
+	CreatedAt     pgtype.Timestamp `json:"created_at"`
+	UpdatedAt     pgtype.Timestamp `json:"updated_at"`
+}
+
+type ListingComponent struct {
+	ListingID          int32            `json:"listing_id"`
+	ComponentListingID int32            `json:"component_listing_id"`
+	Quantity           int32            `json:"quantity"`
+	CreatedAt          pgtype.Timestamp `json:"created_at"`
+}
+
+type ListingGecko struct {
+	ListingID int32            `json:"listing_id"`
+	GeckoID   int32            `json:"gecko_id"`
+	CreatedAt pgtype.Timestamp `json:"created_at"`
 }
 
 type Medium struct {

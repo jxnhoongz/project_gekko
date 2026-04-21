@@ -45,7 +45,6 @@ type publicGeckoDTO struct {
 	Morph         string  `json:"morph"`
 	Sex           string  `json:"sex"`
 	HatchDate     *string `json:"hatch_date"`
-	ListPriceUsd  *string `json:"list_price_usd"`
 	CoverPhotoUrl *string `json:"cover_photo_url"`
 }
 
@@ -112,7 +111,6 @@ func (d *publicDeps) listAvailable(w http.ResponseWriter, r *http.Request) {
 			Morph:         composePublicMorph(genesByGecko[g.ID]),
 			Sex:           string(g.Sex),
 			HatchDate:     dateOrNil(g.HatchDate),
-			ListPriceUsd:  numericOrNil(g.ListPriceUsd),
 			CoverPhotoUrl: coverPtr(coverByGecko, g.ID),
 		})
 	}
@@ -174,7 +172,6 @@ func (d *publicDeps) getByCode(w http.ResponseWriter, r *http.Request) {
 			Morph:         composePublicMorph(genes),
 			Sex:           string(row.Sex),
 			HatchDate:     dateOrNil(row.HatchDate),
-			ListPriceUsd:  numericOrNil(row.ListPriceUsd),
 			CoverPhotoUrl: cover,
 		},
 		Photos: photosOut,

@@ -1,6 +1,6 @@
 -- name: ListAvailableGeckos :many
 SELECT
-  g.id, g.code, g.name, g.species_id, g.sex, g.hatch_date, g.list_price_usd,
+  g.id, g.code, g.name, g.species_id, g.sex, g.hatch_date,
   g.created_at,
   sp.code AS species_code,
   sp.common_name AS species_common_name
@@ -11,7 +11,7 @@ ORDER BY g.created_at DESC;
 
 -- name: GetAvailableGeckoByCode :one
 SELECT
-  g.id, g.code, g.name, g.species_id, g.sex, g.hatch_date, g.list_price_usd,
+  g.id, g.code, g.name, g.species_id, g.sex, g.hatch_date,
   g.created_at,
   sp.code AS species_code,
   sp.common_name AS species_common_name

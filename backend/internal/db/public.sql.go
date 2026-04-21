@@ -13,7 +13,7 @@ import (
 
 const getAvailableGeckoByCode = `-- name: GetAvailableGeckoByCode :one
 SELECT
-  g.id, g.code, g.name, g.species_id, g.sex, g.hatch_date, g.list_price_usd,
+  g.id, g.code, g.name, g.species_id, g.sex, g.hatch_date,
   g.created_at,
   sp.code AS species_code,
   sp.common_name AS species_common_name
@@ -30,7 +30,6 @@ type GetAvailableGeckoByCodeRow struct {
 	SpeciesID         int32            `json:"species_id"`
 	Sex               Sex              `json:"sex"`
 	HatchDate         pgtype.Date      `json:"hatch_date"`
-	ListPriceUsd      pgtype.Numeric   `json:"list_price_usd"`
 	CreatedAt         pgtype.Timestamp `json:"created_at"`
 	SpeciesCode       SpeciesCode      `json:"species_code"`
 	SpeciesCommonName string           `json:"species_common_name"`
@@ -46,7 +45,6 @@ func (q *Queries) GetAvailableGeckoByCode(ctx context.Context, code string) (Get
 		&i.SpeciesID,
 		&i.Sex,
 		&i.HatchDate,
-		&i.ListPriceUsd,
 		&i.CreatedAt,
 		&i.SpeciesCode,
 		&i.SpeciesCommonName,
@@ -56,7 +54,7 @@ func (q *Queries) GetAvailableGeckoByCode(ctx context.Context, code string) (Get
 
 const listAvailableGeckos = `-- name: ListAvailableGeckos :many
 SELECT
-  g.id, g.code, g.name, g.species_id, g.sex, g.hatch_date, g.list_price_usd,
+  g.id, g.code, g.name, g.species_id, g.sex, g.hatch_date,
   g.created_at,
   sp.code AS species_code,
   sp.common_name AS species_common_name
@@ -73,7 +71,6 @@ type ListAvailableGeckosRow struct {
 	SpeciesID         int32            `json:"species_id"`
 	Sex               Sex              `json:"sex"`
 	HatchDate         pgtype.Date      `json:"hatch_date"`
-	ListPriceUsd      pgtype.Numeric   `json:"list_price_usd"`
 	CreatedAt         pgtype.Timestamp `json:"created_at"`
 	SpeciesCode       SpeciesCode      `json:"species_code"`
 	SpeciesCommonName string           `json:"species_common_name"`
@@ -95,7 +92,6 @@ func (q *Queries) ListAvailableGeckos(ctx context.Context) ([]ListAvailableGecko
 			&i.SpeciesID,
 			&i.Sex,
 			&i.HatchDate,
-			&i.ListPriceUsd,
 			&i.CreatedAt,
 			&i.SpeciesCode,
 			&i.SpeciesCommonName,
