@@ -16,6 +16,14 @@ import {
 import PageHeader from '@/components/layout/PageHeader.vue';
 import ERGraph from '@/components/schema/ERGraph.vue';
 import TableDetail from '@/components/schema/TableDetail.vue';
+import {
+  DialogRoot,
+  DialogPortal,
+  DialogOverlay,
+  DialogContent,
+  DialogClose,
+} from 'reka-ui';
+import { X } from 'lucide-vue-next';
 import { api } from '@/lib/api';
 import type { DbTable, SchemaResponse } from '@/types/schema';
 
@@ -84,6 +92,11 @@ const totalRows = computed(() =>
 const totalFks = computed(() =>
   tables.value.reduce((sum, t) => sum + (t.foreign_keys?.length ?? 0), 0),
 );
+
+// Shared ER graph positions between inline + fullscreen views
+type Positions = Record<string, { cx: number; cy: number }>;
+const graphPositions = ref<Positions>({});
+const fsOpen = ref(false);
 </script>
 
 <template>
@@ -157,10 +170,49 @@ const totalFks = computed(() =>
     <!-- ER graph overview -->
     <ERGraph
       v-if="!loading && tables.length"
+      v-model:positions="graphPositions"
       :tables="tables"
       :selected="selected"
       @select="selectTable"
+      @fullscreen="fsOpen = true"
     />
+
+    <!-- Fullscreen ER graph modal -->
+    <DialogRoot v-model:open="fsOpen">
+      <DialogPortal>
+        <DialogOverlay
+          class="fixed inset-0 z-50 bg-brand-dark-950/50 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0"
+        />
+        <DialogContent
+          class="fixed left-1/2 top-1/2 z-50 w-[min(96vw,1400px)] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-brand-cream-50 shadow-2xl overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95"
+          aria-describedby=""
+        >
+          <div class="flex items-center justify-between px-5 py-3 border-b border-brand-cream-200">
+            <div>
+              <div class="text-xs uppercase tracking-wider text-brand-dark-600 font-semibold">
+                Schema
+              </div>
+              <div class="font-serif text-xl text-brand-dark-950">Entity relationships</div>
+            </div>
+            <DialogClose
+              class="rounded-md p-1 text-brand-dark-600 hover:bg-brand-cream-200 hover:text-brand-dark-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <X class="size-5" />
+              <span class="sr-only">Close</span>
+            </DialogClose>
+          </div>
+          <ERGraph
+            v-if="fsOpen"
+            v-model:positions="graphPositions"
+            :tables="tables"
+            :selected="selected"
+            fullscreen
+            hide-fullscreen
+            @select="selectTable"
+          />
+        </DialogContent>
+      </DialogPortal>
+    </DialogRoot>
 
     <!-- Main: sidebar + detail -->
     <div class="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
