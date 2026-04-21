@@ -3,6 +3,7 @@ package http
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -47,6 +48,7 @@ func MountMedia(r chi.Router, pool *pgxpool.Pool, signer *auth.JWTSigner, cfg *c
 	r.Group(func(pr chi.Router) {
 		pr.Use(RequireAuth(signer))
 		pr.Post("/api/geckos/{id}/media", d.upload)
+		pr.Patch("/api/media/{id}", d.patch)
 		pr.Delete("/api/media/{id}", d.delete)
 	})
 }
@@ -194,6 +196,76 @@ func (d *mediaDeps) delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type patchMediaReq struct {
+	Caption      *string `json:"caption"`
+	DisplayOrder *int32  `json:"display_order"`
+}
+
+func (d *mediaDeps) patch(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id64, err := strconv.Atoi(idStr)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid id"})
+		return
+	}
+
+	var req patchMediaReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid json"})
+		return
+	}
+	if req.Caption == nil && req.DisplayOrder == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "no fields to update"})
+		return
+	}
+
+	if req.Caption != nil && len(*req.Caption) > 500 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "caption too long (max 500)"})
+		return
+	}
+	if req.DisplayOrder != nil && (*req.DisplayOrder < 0 || *req.DisplayOrder > 10000) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "display_order out of range"})
+		return
+	}
+
+	ctx := r.Context()
+	var row db.Medium
+	switch {
+	case req.Caption != nil && req.DisplayOrder != nil:
+		row, err = d.q.UpdateMediaCaptionAndOrder(ctx, db.UpdateMediaCaptionAndOrderParams{
+			ID:           int32(id64),
+			Caption:      pgText(*req.Caption),
+			DisplayOrder: *req.DisplayOrder,
+		})
+	case req.Caption != nil:
+		row, err = d.q.UpdateMediaCaption(ctx, db.UpdateMediaCaptionParams{
+			ID:      int32(id64),
+			Caption: pgText(*req.Caption),
+		})
+	case req.DisplayOrder != nil:
+		row, err = d.q.UpdateMediaDisplayOrder(ctx, db.UpdateMediaDisplayOrderParams{
+			ID:           int32(id64),
+			DisplayOrder: *req.DisplayOrder,
+		})
+	}
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "update failed: " + err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, mediaDTO{
+		ID:           row.ID,
+		Url:          row.Url,
+		Type:         string(row.Type),
+		Caption:      textOrEmpty(row.Caption),
+		DisplayOrder: row.DisplayOrder,
+	})
 }
 
 func randomFilename(ext string) (string, error) {
