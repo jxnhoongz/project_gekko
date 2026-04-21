@@ -35,6 +35,9 @@ type Querier interface {
 	GetSpeciesByCode(ctx context.Context, code SpeciesCode) (Species, error)
 	GetSpeciesByID(ctx context.Context, id int32) (Species, error)
 	GetTraitByNameAndSpecies(ctx context.Context, arg GetTraitByNameAndSpeciesParams) (GeneticDictionary, error)
+	// First photo per gecko (lowest display_order, then oldest) so the list
+	// view can render covers in a single round trip instead of N queries.
+	ListCoverMediaForGeckos(ctx context.Context) ([]ListCoverMediaForGeckosRow, error)
 	ListGeckoGenes(ctx context.Context) ([]ListGeckoGenesRow, error)
 	ListGeckos(ctx context.Context) ([]ListGeckosRow, error)
 	ListGenesForGecko(ctx context.Context, geckoID int32) ([]ListGenesForGeckoRow, error)

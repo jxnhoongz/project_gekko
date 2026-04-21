@@ -111,6 +111,53 @@ func (q *Queries) GetMediaByID(ctx context.Context, id int32) (Medium, error) {
 	return i, err
 }
 
+const listCoverMediaForGeckos = `-- name: ListCoverMediaForGeckos :many
+SELECT DISTINCT ON (gecko_id) gecko_id, id, url, type, caption, display_order, uploaded_at
+FROM media
+WHERE gecko_id IS NOT NULL
+ORDER BY gecko_id, display_order, uploaded_at
+`
+
+type ListCoverMediaForGeckosRow struct {
+	GeckoID      pgtype.Int4      `json:"gecko_id"`
+	ID           int32            `json:"id"`
+	Url          string           `json:"url"`
+	Type         MediaType        `json:"type"`
+	Caption      pgtype.Text      `json:"caption"`
+	DisplayOrder int32            `json:"display_order"`
+	UploadedAt   pgtype.Timestamp `json:"uploaded_at"`
+}
+
+// First photo per gecko (lowest display_order, then oldest) so the list
+// view can render covers in a single round trip instead of N queries.
+func (q *Queries) ListCoverMediaForGeckos(ctx context.Context) ([]ListCoverMediaForGeckosRow, error) {
+	rows, err := q.db.Query(ctx, listCoverMediaForGeckos)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListCoverMediaForGeckosRow{}
+	for rows.Next() {
+		var i ListCoverMediaForGeckosRow
+		if err := rows.Scan(
+			&i.GeckoID,
+			&i.ID,
+			&i.Url,
+			&i.Type,
+			&i.Caption,
+			&i.DisplayOrder,
+			&i.UploadedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listMediaForGecko = `-- name: ListMediaForGecko :many
 SELECT id, gecko_id, url, type, caption, display_order, uploaded_at
 FROM media

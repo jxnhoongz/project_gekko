@@ -179,6 +179,19 @@ func (d *geckosDeps) listGeckos(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	// Preload cover photos (first media per gecko) in one query.
+	covers, err := d.q.ListCoverMediaForGeckos(ctx)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "list covers failed"})
+		return
+	}
+	coverByGecko := map[int32]string{}
+	for _, c := range covers {
+		if c.GeckoID.Valid {
+			coverByGecko[c.GeckoID.Int32] = c.Url
+		}
+	}
+
 	total, err := d.q.CountGeckos(ctx)
 	if err != nil {
 		total = int64(len(rows))
@@ -186,7 +199,10 @@ func (d *geckosDeps) listGeckos(w http.ResponseWriter, r *http.Request) {
 
 	out := make([]geckoDTO, 0, len(rows))
 	for _, g := range rows {
-		cover := d.loadCover(ctx, g.ID)
+		var cover *string
+		if u, ok := coverByGecko[g.ID]; ok {
+			cover = &u
+		}
 		out = append(out, geckoDTO{
 			ID:            g.ID,
 			Code:          g.Code,
@@ -286,15 +302,6 @@ func (d *geckosDeps) getGecko(w http.ResponseWriter, r *http.Request) {
 		Photos:        photosOut,
 	}
 	writeJSON(w, http.StatusOK, out)
-}
-
-func (d *geckosDeps) loadCover(ctx any, id int32) *string {
-	rctx, ok := ctx.(interface {
-		Done() <-chan struct{}
-	})
-	_ = rctx
-	_ = ok
-	return nil // left as placeholder; cover is fetched in getGecko only
 }
 
 // helpers

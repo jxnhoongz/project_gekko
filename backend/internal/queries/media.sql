@@ -27,3 +27,11 @@ DELETE FROM media WHERE id = $1;
 
 -- name: CountMediaForGecko :one
 SELECT COUNT(*) FROM media WHERE gecko_id = $1;
+
+-- name: ListCoverMediaForGeckos :many
+-- First photo per gecko (lowest display_order, then oldest) so the list
+-- view can render covers in a single round trip instead of N queries.
+SELECT DISTINCT ON (gecko_id) gecko_id, id, url, type, caption, display_order, uploaded_at
+FROM media
+WHERE gecko_id IS NOT NULL
+ORDER BY gecko_id, display_order, uploaded_at;
