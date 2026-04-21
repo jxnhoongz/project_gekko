@@ -16,7 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
-import LowPolyAccent from '@/components/art/LowPolyAccent.vue';
+import BrandLogo from '@/components/BrandLogo.vue';
 import CommandPalette from '@/components/CommandPalette.vue';
 import { Search } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
@@ -76,9 +76,8 @@ const pageTitle = computed(() => {
     <aside
       class="hidden lg:flex lg:flex-col w-60 shrink-0 bg-brand-cream-50 border-r border-brand-cream-300"
     >
-      <div class="flex items-center gap-2 px-5 h-16 border-b border-brand-cream-300">
-        <LowPolyAccent :size="22" />
-        <div class="font-serif text-xl leading-none">Zenetic</div>
+      <div class="flex items-center px-5 h-16 border-b border-brand-cream-300">
+        <BrandLogo :size="36" />
       </div>
       <nav class="flex flex-col gap-1 p-3 flex-1 overflow-y-auto">
         <RouterLink
@@ -126,9 +125,8 @@ const pageTitle = computed(() => {
           >
             <Menu class="size-5" />
           </Button>
-          <div class="flex items-center gap-2 lg:hidden">
-            <LowPolyAccent :size="18" />
-            <span class="font-serif text-lg">Zenetic</span>
+          <div class="lg:hidden">
+            <BrandLogo :size="30" text-class="font-serif text-lg leading-none" />
           </div>
           <span
             class="hidden lg:block text-sm text-brand-dark-600 font-medium tracking-wide uppercase"
@@ -186,9 +184,8 @@ const pageTitle = computed(() => {
     <!-- Mobile drawer -->
     <Sheet v-model:open="mobileOpen">
       <SheetContent side="left" class="flex flex-col gap-0 p-0">
-        <div class="flex items-center gap-2 px-5 h-16 border-b border-brand-cream-300">
-          <LowPolyAccent :size="22" />
-          <div class="font-serif text-xl leading-none">Zenetic</div>
+        <div class="flex items-center px-5 h-16 border-b border-brand-cream-300">
+          <BrandLogo :size="36" />
         </div>
         <nav class="flex flex-col gap-1 p-3 flex-1 overflow-y-auto">
           <button

@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'vue-sonner';
 import { useAuthStore } from '@/stores/auth';
 import AnimatedBackground from '@/components/AnimatedBackground.vue';
-import LowPolyAccent from '@/components/art/LowPolyAccent.vue';
 
 const email = ref('');
 const password = ref('');
@@ -34,17 +33,25 @@ async function onSubmit(e: Event) {
     <Card
       class="w-full max-w-md !p-0 !gap-0 border-brand-cream-300/70 bg-brand-cream-50/80 backdrop-blur-xl shadow-xl"
     >
-      <div class="p-8 pb-6 flex flex-col gap-2">
-        <div class="flex items-center gap-2">
-          <LowPolyAccent :size="20" />
+      <div class="p-8 pb-6 flex flex-col gap-4 items-start">
+        <img
+          src="/logo/logo_low_poly.png"
+          alt="Zenetic Gekkos"
+          width="72"
+          height="72"
+          class="rounded-xl shadow-md ring-1 ring-brand-cream-300 object-cover"
+          loading="eager"
+          decoding="async"
+        />
+        <div class="flex flex-col gap-1">
           <span class="text-xs font-semibold tracking-[0.16em] uppercase text-brand-gold-700">
             Zenetic Gekkos
           </span>
+          <h1 class="font-serif text-4xl text-brand-dark-950 leading-tight">Admin sign-in</h1>
+          <p class="text-sm text-brand-dark-600">
+            Sign in to manage the colony, waitlist and sales.
+          </p>
         </div>
-        <h1 class="font-serif text-4xl text-brand-dark-950 leading-tight">Admin sign-in</h1>
-        <p class="text-sm text-brand-dark-600">
-          Sign in to manage the colony, waitlist and sales.
-        </p>
       </div>
 
       <form class="px-8 pb-8 flex flex-col gap-5" @submit="onSubmit">
