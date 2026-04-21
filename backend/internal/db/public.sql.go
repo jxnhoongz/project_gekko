@@ -13,13 +13,29 @@ import (
 
 const getAvailableGeckoByCode = `-- name: GetAvailableGeckoByCode :one
 SELECT
-  g.id, g.code, g.name, g.species_id, g.sex, g.hatch_date,
-  g.created_at,
-  sp.code AS species_code,
-  sp.common_name AS species_common_name
+    g.id,
+    g.code,
+    g.name,
+    g.species_id,
+    g.sex,
+    g.hatch_date,
+    g.acquired_date,
+    g.status,
+    g.sire_id,
+    g.dam_id,
+    g.notes,
+    g.created_at,
+    g.updated_at,
+    s.code         AS species_code,
+    s.common_name  AS species_common_name,
+    l.price_usd    AS list_price_usd
 FROM geckos g
-JOIN species sp ON sp.id = g.species_id
-WHERE g.status = 'AVAILABLE' AND g.code = $1
+JOIN species s       ON s.id = g.species_id
+JOIN listing_geckos lg ON lg.gecko_id = g.id
+JOIN listings l        ON l.id = lg.listing_id
+                      AND l.type = 'GECKO'
+                      AND l.status = 'LISTED'
+WHERE g.code = $1
 LIMIT 1
 `
 
@@ -30,9 +46,16 @@ type GetAvailableGeckoByCodeRow struct {
 	SpeciesID         int32            `json:"species_id"`
 	Sex               Sex              `json:"sex"`
 	HatchDate         pgtype.Date      `json:"hatch_date"`
+	AcquiredDate      pgtype.Date      `json:"acquired_date"`
+	Status            GeckoStatus      `json:"status"`
+	SireID            pgtype.Int4      `json:"sire_id"`
+	DamID             pgtype.Int4      `json:"dam_id"`
+	Notes             pgtype.Text      `json:"notes"`
 	CreatedAt         pgtype.Timestamp `json:"created_at"`
+	UpdatedAt         pgtype.Timestamp `json:"updated_at"`
 	SpeciesCode       SpeciesCode      `json:"species_code"`
 	SpeciesCommonName string           `json:"species_common_name"`
+	ListPriceUsd      pgtype.Numeric   `json:"list_price_usd"`
 }
 
 func (q *Queries) GetAvailableGeckoByCode(ctx context.Context, code string) (GetAvailableGeckoByCodeRow, error) {
@@ -45,22 +68,44 @@ func (q *Queries) GetAvailableGeckoByCode(ctx context.Context, code string) (Get
 		&i.SpeciesID,
 		&i.Sex,
 		&i.HatchDate,
+		&i.AcquiredDate,
+		&i.Status,
+		&i.SireID,
+		&i.DamID,
+		&i.Notes,
 		&i.CreatedAt,
+		&i.UpdatedAt,
 		&i.SpeciesCode,
 		&i.SpeciesCommonName,
+		&i.ListPriceUsd,
 	)
 	return i, err
 }
 
 const listAvailableGeckos = `-- name: ListAvailableGeckos :many
 SELECT
-  g.id, g.code, g.name, g.species_id, g.sex, g.hatch_date,
-  g.created_at,
-  sp.code AS species_code,
-  sp.common_name AS species_common_name
+    g.id,
+    g.code,
+    g.name,
+    g.species_id,
+    g.sex,
+    g.hatch_date,
+    g.acquired_date,
+    g.status,
+    g.sire_id,
+    g.dam_id,
+    g.notes,
+    g.created_at,
+    g.updated_at,
+    s.code         AS species_code,
+    s.common_name  AS species_common_name,
+    l.price_usd    AS list_price_usd
 FROM geckos g
-JOIN species sp ON sp.id = g.species_id
-WHERE g.status = 'AVAILABLE'
+JOIN species s       ON s.id = g.species_id
+JOIN listing_geckos lg ON lg.gecko_id = g.id
+JOIN listings l        ON l.id = lg.listing_id
+                      AND l.type = 'GECKO'
+                      AND l.status = 'LISTED'
 ORDER BY g.created_at DESC
 `
 
@@ -71,9 +116,16 @@ type ListAvailableGeckosRow struct {
 	SpeciesID         int32            `json:"species_id"`
 	Sex               Sex              `json:"sex"`
 	HatchDate         pgtype.Date      `json:"hatch_date"`
+	AcquiredDate      pgtype.Date      `json:"acquired_date"`
+	Status            GeckoStatus      `json:"status"`
+	SireID            pgtype.Int4      `json:"sire_id"`
+	DamID             pgtype.Int4      `json:"dam_id"`
+	Notes             pgtype.Text      `json:"notes"`
 	CreatedAt         pgtype.Timestamp `json:"created_at"`
+	UpdatedAt         pgtype.Timestamp `json:"updated_at"`
 	SpeciesCode       SpeciesCode      `json:"species_code"`
 	SpeciesCommonName string           `json:"species_common_name"`
+	ListPriceUsd      pgtype.Numeric   `json:"list_price_usd"`
 }
 
 func (q *Queries) ListAvailableGeckos(ctx context.Context) ([]ListAvailableGeckosRow, error) {
@@ -92,9 +144,16 @@ func (q *Queries) ListAvailableGeckos(ctx context.Context) ([]ListAvailableGecko
 			&i.SpeciesID,
 			&i.Sex,
 			&i.HatchDate,
+			&i.AcquiredDate,
+			&i.Status,
+			&i.SireID,
+			&i.DamID,
+			&i.Notes,
 			&i.CreatedAt,
+			&i.UpdatedAt,
 			&i.SpeciesCode,
 			&i.SpeciesCommonName,
+			&i.ListPriceUsd,
 		); err != nil {
 			return nil, err
 		}

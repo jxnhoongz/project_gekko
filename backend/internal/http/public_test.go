@@ -45,15 +45,49 @@ func makePublicGecko(t *testing.T, pool *pgxpool.Pool, code string, status db.Ge
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() {
+		_, _ = pool.Exec(context.Background(), "DELETE FROM listing_geckos WHERE gecko_id = $1", g.ID)
+		_, _ = pool.Exec(context.Background(), "DELETE FROM listings WHERE id IN (SELECT listing_id FROM listing_geckos WHERE gecko_id = $1)", g.ID)
 		_, _ = pool.Exec(context.Background(), "DELETE FROM geckos WHERE id = $1", g.ID)
 	})
 	return g.ID
 }
 
-func TestPublicListGeckos_onlyAvailable(t *testing.T) {
+// seedGeckoListing attaches a LISTED type=GECKO listing to the given gecko so
+// the public endpoints will surface it. Returns the listing id. Cleanup of the
+// listing + junction happens via makePublicGecko's cleanup hook (which deletes
+// listing_geckos + listings first, then the gecko).
+func seedGeckoListing(t *testing.T, pool *pgxpool.Pool, geckoID int32, priceUsd string) int32 {
+	t.Helper()
+	var listingID int32
+	err := pool.QueryRow(context.Background(), `
+		WITH l AS (
+			INSERT INTO listings (title, type, status, price_usd, listed_at)
+			VALUES ($1, 'GECKO', 'LISTED', $2, now())
+			RETURNING id
+		),
+		j AS (
+			INSERT INTO listing_geckos (listing_id, gecko_id)
+			SELECT l.id, $3 FROM l
+			RETURNING listing_id
+		)
+		SELECT id FROM l
+	`, "test listing "+priceUsd, priceUsd, geckoID).Scan(&listingID)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = pool.Exec(context.Background(), "DELETE FROM listing_geckos WHERE listing_id = $1", listingID)
+		_, _ = pool.Exec(context.Background(), "DELETE FROM listings WHERE id = $1", listingID)
+	})
+	return listingID
+}
+
+func TestPublicListGeckos_onlyListed(t *testing.T) {
 	router, pool := publicSetup(t)
 	stamp := time.Now().Format("150405000")
-	makePublicGecko(t, pool, "PA-"+stamp, db.GeckoStatusAVAILABLE)
+	// Public visibility is now driven by the presence of a LISTED type=GECKO
+	// listing, not by gecko.status. Only PA gets a listing; PH + PB do not
+	// (even though PA happens to be AVAILABLE here, that's incidental).
+	paID := makePublicGecko(t, pool, "PA-"+stamp, db.GeckoStatusAVAILABLE)
+	seedGeckoListing(t, pool, paID, "250.00")
 	makePublicGecko(t, pool, "PH-"+stamp, db.GeckoStatusHOLD)
 	makePublicGecko(t, pool, "PB-"+stamp, db.GeckoStatusBREEDING)
 
@@ -68,19 +102,27 @@ func TestPublicListGeckos_onlyAvailable(t *testing.T) {
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &body))
 
 	var codes []string
+	var paPrice *string
 	for _, g := range body.Geckos {
 		codes = append(codes, g.Code)
+		if g.Code == "PA-"+stamp {
+			paPrice = g.ListPriceUsd
+		}
 	}
 	assert.Contains(t, codes, "PA-"+stamp)
 	assert.NotContains(t, codes, "PH-"+stamp)
 	assert.NotContains(t, codes, "PB-"+stamp)
+	if assert.NotNil(t, paPrice, "list_price_usd should be populated from listing") {
+		assert.Equal(t, "250.00", *paPrice)
+	}
 }
 
 func TestPublicGetGecko_byCode_available(t *testing.T) {
 	router, pool := publicSetup(t)
 	stamp := time.Now().Format("150405000")
 	code := "PG-" + stamp
-	makePublicGecko(t, pool, code, db.GeckoStatusAVAILABLE)
+	id := makePublicGecko(t, pool, code, db.GeckoStatusAVAILABLE)
+	seedGeckoListing(t, pool, id, "425.00")
 
 	req := httptest.NewRequest(http.MethodGet, "/api/public/geckos/"+code, nil)
 	rr := httptest.NewRecorder()
@@ -89,6 +131,7 @@ func TestPublicGetGecko_byCode_available(t *testing.T) {
 	require.Equal(t, http.StatusOK, rr.Code, "body=%s", rr.Body.String())
 	raw := rr.Body.String()
 	assert.Contains(t, raw, `"code":"`+code+`"`)
+	assert.Contains(t, raw, `"list_price_usd":"425.00"`)
 	assert.NotContains(t, raw, `"notes"`)
 	assert.NotContains(t, raw, `"sire_id"`)
 	assert.NotContains(t, raw, `"dam_id"`)

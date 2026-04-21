@@ -1,23 +1,54 @@
 -- name: ListAvailableGeckos :many
 SELECT
-  g.id, g.code, g.name, g.species_id, g.sex, g.hatch_date,
-  g.created_at,
-  sp.code AS species_code,
-  sp.common_name AS species_common_name
+    g.id,
+    g.code,
+    g.name,
+    g.species_id,
+    g.sex,
+    g.hatch_date,
+    g.acquired_date,
+    g.status,
+    g.sire_id,
+    g.dam_id,
+    g.notes,
+    g.created_at,
+    g.updated_at,
+    s.code         AS species_code,
+    s.common_name  AS species_common_name,
+    l.price_usd    AS list_price_usd
 FROM geckos g
-JOIN species sp ON sp.id = g.species_id
-WHERE g.status = 'AVAILABLE'
+JOIN species s       ON s.id = g.species_id
+JOIN listing_geckos lg ON lg.gecko_id = g.id
+JOIN listings l        ON l.id = lg.listing_id
+                      AND l.type = 'GECKO'
+                      AND l.status = 'LISTED'
 ORDER BY g.created_at DESC;
 
 -- name: GetAvailableGeckoByCode :one
 SELECT
-  g.id, g.code, g.name, g.species_id, g.sex, g.hatch_date,
-  g.created_at,
-  sp.code AS species_code,
-  sp.common_name AS species_common_name
+    g.id,
+    g.code,
+    g.name,
+    g.species_id,
+    g.sex,
+    g.hatch_date,
+    g.acquired_date,
+    g.status,
+    g.sire_id,
+    g.dam_id,
+    g.notes,
+    g.created_at,
+    g.updated_at,
+    s.code         AS species_code,
+    s.common_name  AS species_common_name,
+    l.price_usd    AS list_price_usd
 FROM geckos g
-JOIN species sp ON sp.id = g.species_id
-WHERE g.status = 'AVAILABLE' AND g.code = $1
+JOIN species s       ON s.id = g.species_id
+JOIN listing_geckos lg ON lg.gecko_id = g.id
+JOIN listings l        ON l.id = lg.listing_id
+                      AND l.type = 'GECKO'
+                      AND l.status = 'LISTED'
+WHERE g.code = $1
 LIMIT 1;
 
 -- name: ListPublicGenesByGeckoIDs :many
