@@ -171,7 +171,7 @@ function back() {
             {{ gecko.notes }}
           </p>
 
-          <dl class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-brand-cream-200 mt-auto">
+          <dl class="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-brand-cream-200 mt-auto">
             <div class="flex flex-col">
               <dt class="text-[11px] uppercase tracking-wider text-brand-dark-600">Age</dt>
               <dd class="font-serif text-xl text-brand-dark-950">
@@ -187,10 +187,6 @@ function back() {
               <dd class="font-serif text-xl text-brand-dark-950">
                 {{ gecko.hatch_date ? formatDate(gecko.hatch_date) : '—' }}
               </dd>
-            </div>
-            <div v-if="gecko.list_price_usd" class="flex flex-col">
-              <dt class="text-[11px] uppercase tracking-wider text-brand-dark-600">Price</dt>
-              <dd class="font-serif text-xl text-brand-gold-700">${{ gecko.list_price_usd }}</dd>
             </div>
           </dl>
         </div>

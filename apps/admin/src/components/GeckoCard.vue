@@ -84,10 +84,6 @@ function open() {
             {{ gecko.name || 'Unnamed' }}
           </h3>
         </div>
-        <div v-if="gecko.list_price_usd" class="text-right shrink-0">
-          <div class="font-semibold text-brand-gold-700">${{ gecko.list_price_usd }}</div>
-          <div class="text-[10px] uppercase tracking-wide text-brand-dark-600">USD</div>
-        </div>
       </div>
       <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-brand-dark-600">
         <span>{{ gecko.species_name }}</span>

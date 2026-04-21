@@ -45,7 +45,6 @@ const sex = ref<Sex>('U');
 const hatchDate = ref('');
 const acquiredDate = ref('');
 const status = ref<GeckoStatus>('AVAILABLE');
-const priceUsd = ref('');
 const notes = ref('');
 
 interface TraitRow {
@@ -66,7 +65,6 @@ function reset() {
     hatchDate.value = g.hatch_date ?? '';
     acquiredDate.value = g.acquired_date ?? '';
     status.value = g.status;
-    priceUsd.value = g.list_price_usd ?? '';
     notes.value = g.notes ?? '';
     traits.value = g.traits.map((t) => ({
       trait_id: t.trait_id,
@@ -81,7 +79,6 @@ function reset() {
     hatchDate.value = '';
     acquiredDate.value = '';
     status.value = 'AVAILABLE';
-    priceUsd.value = '';
     notes.value = '';
     traits.value = [];
     sireId.value = null;
@@ -285,7 +282,6 @@ async function submit() {
     status: status.value,
     sire_id: sireId.value,
     dam_id: damId.value,
-    list_price_usd: priceUsd.value.trim(),
     notes: notes.value.trim(),
     traits: traits.value,
   };
@@ -427,29 +423,15 @@ const zygosities: Zygosity[] = ['HOM', 'HET', 'POSS_HET'];
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="flex flex-col gap-2">
-              <Label for="gf-status">Status</Label>
-              <select
-                id="gf-status"
-                v-model="status"
-                class="h-9 rounded-md border border-brand-cream-300 bg-white px-3 text-sm"
-              >
-                <option v-for="s in statuses" :key="s" :value="s">{{ s }}</option>
-              </select>
-            </div>
-            <div class="flex flex-col gap-2">
-              <Label for="gf-price">List price (USD)</Label>
-              <Input
-                id="gf-price"
-                v-model="priceUsd"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="e.g. 180"
-                class="bg-white"
-              />
-            </div>
+          <div class="flex flex-col gap-2">
+            <Label for="gf-status">Status</Label>
+            <select
+              id="gf-status"
+              v-model="status"
+              class="h-9 rounded-md border border-brand-cream-300 bg-white px-3 text-sm"
+            >
+              <option v-for="s in statuses" :key="s" :value="s">{{ s }}</option>
+            </select>
           </div>
 
           <div class="flex flex-col gap-2">
