@@ -23,6 +23,14 @@ type Querier interface {
 	CreateSpecies(ctx context.Context, arg CreateSpeciesParams) (Species, error)
 	CreateTrait(ctx context.Context, arg CreateTraitParams) (GeneticDictionary, error)
 	CreateWaitlistEntry(ctx context.Context, arg CreateWaitlistEntryParams) (WaitlistEntry, error)
+	// Waitlist entries that have been sitting uncontacted >7 days, and
+	// geckos that have been on HOLD >7 days without any status change.
+	// Top 6 merged by staleness (oldest first).
+	DashboardNeedsAttention(ctx context.Context) ([]DashboardNeedsAttentionRow, error)
+	// Top 15 most-recent events across three sources. Keep the shape
+	// identical across branches so sqlc generates a single row type.
+	DashboardRecentActivity(ctx context.Context) ([]DashboardRecentActivityRow, error)
+	DashboardStats(ctx context.Context) (DashboardStatsRow, error)
 	DeleteGecko(ctx context.Context, id int32) error
 	DeleteGenesForGecko(ctx context.Context, geckoID int32) error
 	DeleteMedia(ctx context.Context, id int32) error
@@ -42,6 +50,9 @@ type Querier interface {
 	ListGeckos(ctx context.Context) ([]ListGeckosRow, error)
 	ListGenesForGecko(ctx context.Context, geckoID int32) ([]ListGenesForGeckoRow, error)
 	ListMediaForGecko(ctx context.Context, geckoID pgtype.Int4) ([]Medium, error)
+	// Returns the media ids for a gecko in the same (display_order, uploaded_at)
+	// order the client sees. Used by set-cover to reassign display_order.
+	ListMediaIDsForGeckoOrdered(ctx context.Context, geckoID pgtype.Int4) ([]int32, error)
 	ListSpecies(ctx context.Context) ([]Species, error)
 	ListTraits(ctx context.Context) ([]GeneticDictionary, error)
 	ListTraitsBySpecies(ctx context.Context, speciesID int32) ([]GeneticDictionary, error)
@@ -50,6 +61,9 @@ type Querier interface {
 	// legacy codes that don't have a 3rd segment (SPLIT_PART returns '').
 	NextGeckoSequenceForSpeciesYear(ctx context.Context, code string) (int32, error)
 	UpdateGecko(ctx context.Context, arg UpdateGeckoParams) (Gecko, error)
+	UpdateMediaCaption(ctx context.Context, arg UpdateMediaCaptionParams) (Medium, error)
+	UpdateMediaCaptionAndOrder(ctx context.Context, arg UpdateMediaCaptionAndOrderParams) (Medium, error)
+	UpdateMediaDisplayOrder(ctx context.Context, arg UpdateMediaDisplayOrderParams) (Medium, error)
 }
 
 var _ Querier = (*Queries)(nil)

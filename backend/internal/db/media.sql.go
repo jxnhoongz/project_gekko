@@ -192,3 +192,114 @@ func (q *Queries) ListMediaForGecko(ctx context.Context, geckoID pgtype.Int4) ([
 	}
 	return items, nil
 }
+
+const listMediaIDsForGeckoOrdered = `-- name: ListMediaIDsForGeckoOrdered :many
+SELECT id
+FROM media
+WHERE gecko_id = $1
+ORDER BY display_order, uploaded_at
+`
+
+// Returns the media ids for a gecko in the same (display_order, uploaded_at)
+// order the client sees. Used by set-cover to reassign display_order.
+func (q *Queries) ListMediaIDsForGeckoOrdered(ctx context.Context, geckoID pgtype.Int4) ([]int32, error) {
+	rows, err := q.db.Query(ctx, listMediaIDsForGeckoOrdered, geckoID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int32{}
+	for rows.Next() {
+		var id int32
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateMediaCaption = `-- name: UpdateMediaCaption :one
+UPDATE media
+SET caption = $2
+WHERE id = $1
+RETURNING id, gecko_id, url, type, caption, display_order, uploaded_at
+`
+
+type UpdateMediaCaptionParams struct {
+	ID      int32       `json:"id"`
+	Caption pgtype.Text `json:"caption"`
+}
+
+func (q *Queries) UpdateMediaCaption(ctx context.Context, arg UpdateMediaCaptionParams) (Medium, error) {
+	row := q.db.QueryRow(ctx, updateMediaCaption, arg.ID, arg.Caption)
+	var i Medium
+	err := row.Scan(
+		&i.ID,
+		&i.GeckoID,
+		&i.Url,
+		&i.Type,
+		&i.Caption,
+		&i.DisplayOrder,
+		&i.UploadedAt,
+	)
+	return i, err
+}
+
+const updateMediaCaptionAndOrder = `-- name: UpdateMediaCaptionAndOrder :one
+UPDATE media
+SET caption = $2, display_order = $3
+WHERE id = $1
+RETURNING id, gecko_id, url, type, caption, display_order, uploaded_at
+`
+
+type UpdateMediaCaptionAndOrderParams struct {
+	ID           int32       `json:"id"`
+	Caption      pgtype.Text `json:"caption"`
+	DisplayOrder int32       `json:"display_order"`
+}
+
+func (q *Queries) UpdateMediaCaptionAndOrder(ctx context.Context, arg UpdateMediaCaptionAndOrderParams) (Medium, error) {
+	row := q.db.QueryRow(ctx, updateMediaCaptionAndOrder, arg.ID, arg.Caption, arg.DisplayOrder)
+	var i Medium
+	err := row.Scan(
+		&i.ID,
+		&i.GeckoID,
+		&i.Url,
+		&i.Type,
+		&i.Caption,
+		&i.DisplayOrder,
+		&i.UploadedAt,
+	)
+	return i, err
+}
+
+const updateMediaDisplayOrder = `-- name: UpdateMediaDisplayOrder :one
+UPDATE media
+SET display_order = $2
+WHERE id = $1
+RETURNING id, gecko_id, url, type, caption, display_order, uploaded_at
+`
+
+type UpdateMediaDisplayOrderParams struct {
+	ID           int32 `json:"id"`
+	DisplayOrder int32 `json:"display_order"`
+}
+
+func (q *Queries) UpdateMediaDisplayOrder(ctx context.Context, arg UpdateMediaDisplayOrderParams) (Medium, error) {
+	row := q.db.QueryRow(ctx, updateMediaDisplayOrder, arg.ID, arg.DisplayOrder)
+	var i Medium
+	err := row.Scan(
+		&i.ID,
+		&i.GeckoID,
+		&i.Url,
+		&i.Type,
+		&i.Caption,
+		&i.DisplayOrder,
+		&i.UploadedAt,
+	)
+	return i, err
+}

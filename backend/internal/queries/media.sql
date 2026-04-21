@@ -35,3 +35,29 @@ SELECT DISTINCT ON (gecko_id) gecko_id, id, url, type, caption, display_order, u
 FROM media
 WHERE gecko_id IS NOT NULL
 ORDER BY gecko_id, display_order, uploaded_at;
+
+-- name: UpdateMediaCaption :one
+UPDATE media
+SET caption = $2
+WHERE id = $1
+RETURNING id, gecko_id, url, type, caption, display_order, uploaded_at;
+
+-- name: UpdateMediaDisplayOrder :one
+UPDATE media
+SET display_order = $2
+WHERE id = $1
+RETURNING id, gecko_id, url, type, caption, display_order, uploaded_at;
+
+-- name: UpdateMediaCaptionAndOrder :one
+UPDATE media
+SET caption = $2, display_order = $3
+WHERE id = $1
+RETURNING id, gecko_id, url, type, caption, display_order, uploaded_at;
+
+-- name: ListMediaIDsForGeckoOrdered :many
+-- Returns the media ids for a gecko in the same (display_order, uploaded_at)
+-- order the client sees. Used by set-cover to reassign display_order.
+SELECT id
+FROM media
+WHERE gecko_id = $1
+ORDER BY display_order, uploaded_at;
