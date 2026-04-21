@@ -93,10 +93,50 @@ const totalFks = computed(() =>
   tables.value.reduce((sum, t) => sum + (t.foreign_keys?.length ?? 0), 0),
 );
 
-// Shared ER graph positions between inline + fullscreen views
+// Shared ER graph positions between inline + fullscreen views.
+// Persisted to localStorage per-device so the layout survives refreshes.
 type Positions = Record<string, { cx: number; cy: number }>;
-const graphPositions = ref<Positions>({});
+
+const POS_STORAGE_KEY = 'gekko.schema.er-positions.v1';
+
+function loadStoredPositions(): Positions {
+  try {
+    const raw = localStorage.getItem(POS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return {};
+    const out: Positions = {};
+    for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+      if (
+        v && typeof v === 'object' &&
+        typeof (v as any).cx === 'number' &&
+        typeof (v as any).cy === 'number'
+      ) {
+        out[k] = { cx: (v as any).cx, cy: (v as any).cy };
+      }
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function savePositions(p: Positions) {
+  try {
+    localStorage.setItem(POS_STORAGE_KEY, JSON.stringify(p));
+  } catch {
+    /* quota exceeded or private mode — ignore */
+  }
+}
+
+const graphPositions = ref<Positions>(loadStoredPositions());
 const fsOpen = ref(false);
+
+watch(
+  graphPositions,
+  (v) => savePositions(v),
+  { deep: true },
+);
 </script>
 
 <template>

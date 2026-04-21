@@ -45,7 +45,9 @@ const draggingNode = ref<string | null>(null);
 let dragStartMouse = { x: 0, y: 0 };
 let dragStartNode = { cx: 0, cy: 0 };
 
-let panningStart: { x: number; y: number; panX: number; panY: number } | null = null;
+// Pan tracks the pointer in *client-pixel space* to avoid feeding back
+// through the CTM as the viewBox shifts (that path causes jitter).
+let panningStart: { clientX: number; clientY: number; panX: number; panY: number } | null = null;
 
 const svgRef = ref<SVGSVGElement | null>(null);
 
@@ -193,9 +195,12 @@ function onNodePointerDown(e: PointerEvent, name: string) {
 
 function onSvgPointerDown(e: PointerEvent) {
   if (tool.value === 'hand') {
-    // Pan — only when clicking background (not a node).
-    const p = toSvg(e);
-    panningStart = { x: p.x, y: p.y, panX: pan.value.x, panY: pan.value.y };
+    panningStart = {
+      clientX: e.clientX,
+      clientY: e.clientY,
+      panX: pan.value.x,
+      panY: pan.value.y,
+    };
     (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
   }
 }
@@ -214,10 +219,17 @@ function onPointerMove(e: PointerEvent) {
     return;
   }
   if (panningStart) {
-    const p = toSvg(e);
+    // Convert client-pixel delta into SVG-unit delta via current render size.
+    const svg = svgRef.value;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const scaleX = rect.width  > 0 ? W.value / rect.width  : 1;
+    const scaleY = rect.height > 0 ? H.value / rect.height : 1;
+    const dx = (e.clientX - panningStart.clientX) * scaleX;
+    const dy = (e.clientY - panningStart.clientY) * scaleY;
     pan.value = {
-      x: panningStart.panX - (p.x - panningStart.x),
-      y: panningStart.panY - (p.y - panningStart.y),
+      x: panningStart.panX - dx,
+      y: panningStart.panY - dy,
     };
   }
 }
