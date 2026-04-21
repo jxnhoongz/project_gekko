@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -159,12 +158,9 @@ func composeRecentActivity(rows []db.DashboardRecentActivityRow) []dashItem {
 
 // daysAgo returns whole days between t and now (never negative).
 func daysAgo(t time.Time) int {
-	d := int(time.Since(t).Hours() / 24)
+	d := int(timeNow().Sub(t).Hours() / 24)
 	if d < 0 {
 		return 0
 	}
 	return d
 }
-
-// ---- compile-time guard: ensure context is always used ----
-var _ = context.Background
