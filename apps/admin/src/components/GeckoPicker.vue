@@ -89,6 +89,8 @@ watch(open, (v) => {
       type="button"
       class="w-full h-9 rounded-md border border-brand-cream-300 bg-white px-3 text-left text-sm flex items-center gap-2 transition-colors disabled:bg-brand-cream-100 disabled:text-brand-dark-400 disabled:cursor-not-allowed"
       :disabled="speciesId === null"
+      aria-haspopup="listbox"
+      :aria-expanded="open"
       @click="openPicker"
     >
       <span v-if="speciesId === null" class="text-brand-dark-500">Pick species first</span>
@@ -115,6 +117,7 @@ watch(open, (v) => {
         ref="inputRef"
         v-model="query"
         type="text"
+        :aria-label="placeholder ?? 'Search geckos'"
         :placeholder="placeholder ?? 'Type to search…'"
         class="w-full h-9 px-3 text-sm border-b border-brand-cream-200 outline-none"
         @keydown.esc="open = false"
@@ -127,6 +130,8 @@ watch(open, (v) => {
         <li
           v-for="g in filtered"
           :key="g.id"
+          role="option"
+          :aria-selected="g.id === modelValue"
           class="px-3 py-1.5 text-sm cursor-pointer hover:bg-brand-cream-100 flex items-center gap-2"
           @click="pick(g.id)"
         >
