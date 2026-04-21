@@ -139,3 +139,39 @@ export function useDeleteMedia() {
     onSuccess: (geckoId) => invalidateGeckos(qc, geckoId),
   });
 }
+
+export function useUpdateMedia() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      mediaId,
+      geckoId,
+      patch,
+    }: {
+      mediaId: number;
+      geckoId: number;
+      patch: { caption?: string; display_order?: number };
+    }) => {
+      const { data } = await api.patch(`/api/media/${mediaId}`, patch);
+      return { geckoId, media: data };
+    },
+    onSuccess: ({ geckoId }) => invalidateGeckos(qc, geckoId),
+  });
+}
+
+export function useSetCoverMedia() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      mediaId,
+      geckoId,
+    }: {
+      mediaId: number;
+      geckoId: number;
+    }) => {
+      await api.post(`/api/media/${mediaId}/set-cover`);
+      return geckoId;
+    },
+    onSuccess: (geckoId) => invalidateGeckos(qc, geckoId),
+  });
+}
