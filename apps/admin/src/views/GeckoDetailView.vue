@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { toast } from 'vue-sonner';
 import { Card } from '@/components/ui/card';
 import { Badge, type BadgeVariants } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,11 +18,14 @@ import {
   Image as ImageIcon,
   Plus,
   AlertTriangle,
+  Pencil,
+  Trash2,
 } from 'lucide-vue-next';
 import EmptyState from '@/components/layout/EmptyState.vue';
 import LowPolyGecko from '@/components/art/LowPolyGecko.vue';
 import WeightSparkline from '@/components/WeightSparkline.vue';
-import { useGecko } from '@/composables/useGeckos';
+import GeckoFormSheet from '@/components/GeckoFormSheet.vue';
+import { useGecko, useDeleteGecko } from '@/composables/useGeckos';
 import type { GeckoStatus, Sex, Zygosity } from '@/types/gecko';
 import { morphFromTraits, STATUS_LABEL, SEX_LABEL } from '@/types/gecko';
 import { formatDate, ageFromBirth } from '@/lib/format';
@@ -31,6 +35,24 @@ const router = useRouter();
 
 const idNum = computed(() => Number(props.id));
 const { data: gecko, isLoading, isError, error } = useGecko(idNum);
+
+const editOpen = ref(false);
+const deleteMut = useDeleteGecko();
+
+async function onDelete() {
+  if (!gecko.value) return;
+  const label = gecko.value.name || gecko.value.code;
+  if (!window.confirm(`Delete ${label}? This permanently removes its genes and photos too.`)) {
+    return;
+  }
+  try {
+    await deleteMut.mutateAsync(gecko.value.id);
+    toast.success(`Deleted ${label}.`);
+    router.push({ name: 'geckos' });
+  } catch (e: unknown) {
+    toast.error((e as Error).message ?? 'Delete failed');
+  }
+}
 
 const statusVariant: Record<GeckoStatus, BadgeVariants['variant']> = {
   BREEDING:  'soft',
@@ -93,10 +115,24 @@ function back() {
 
   <!-- Detail -->
   <div v-else class="flex flex-col gap-8">
-    <div class="flex items-center gap-2">
+    <div class="flex items-center justify-between gap-2">
       <Button variant="ghost" size="sm" @click="back">
         <ArrowLeft class="size-4" /> Geckos
       </Button>
+      <div class="flex items-center gap-2">
+        <Button variant="outline" size="sm" @click="editOpen = true">
+          <Pencil class="size-4" /> Edit
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          :disabled="deleteMut.isPending.value"
+          class="!text-red-700 hover:!bg-red-50"
+          @click="onDelete"
+        >
+          <Trash2 class="size-4" /> Delete
+        </Button>
+      </div>
     </div>
 
     <!-- Hero -->
@@ -316,6 +352,9 @@ function back() {
         </Card>
       </TabsContent>
     </Tabs>
+
+    <!-- Edit drawer -->
+    <GeckoFormSheet v-model:open="editOpen" :gecko="gecko" />
   </div>
   </div>
 </template>

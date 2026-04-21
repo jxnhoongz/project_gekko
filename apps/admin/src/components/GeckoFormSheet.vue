@@ -1,0 +1,383 @@
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue';
+import { toast } from 'vue-sonner';
+import {
+  DialogRoot,
+  DialogPortal,
+  DialogOverlay,
+  DialogContent,
+  DialogClose,
+} from 'reka-ui';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { X, Plus, Trash2, Info } from 'lucide-vue-next';
+import {
+  useSpecies,
+  useTraits,
+  useCreateGecko,
+  useUpdateGecko,
+  type GeckoWritePayload,
+} from '@/composables/useGeckos';
+import type { Gecko, Zygosity, Sex, GeckoStatus } from '@/types/gecko';
+
+const props = defineProps<{
+  /** If supplied, form runs in edit mode. */
+  gecko?: Gecko | null;
+}>();
+
+const open = defineModel<boolean>('open', { default: false });
+const emit = defineEmits<{ (e: 'saved', g: Gecko): void }>();
+
+const isEdit = computed(() => !!props.gecko);
+
+// ---- form state ----
+const name = ref('');
+const speciesId = ref<number | null>(null);
+const sex = ref<Sex>('U');
+const hatchDate = ref('');
+const acquiredDate = ref('');
+const status = ref<GeckoStatus>('AVAILABLE');
+const priceUsd = ref('');
+const notes = ref('');
+
+interface TraitRow {
+  trait_id: number;
+  zygosity: Zygosity;
+}
+const traits = ref<TraitRow[]>([]);
+
+function reset() {
+  const g = props.gecko;
+  if (g) {
+    name.value = g.name ?? '';
+    speciesId.value = g.species_id;
+    sex.value = g.sex;
+    hatchDate.value = g.hatch_date ?? '';
+    acquiredDate.value = g.acquired_date ?? '';
+    status.value = g.status;
+    priceUsd.value = g.list_price_usd ?? '';
+    notes.value = g.notes ?? '';
+    traits.value = g.traits.map((t) => ({
+      trait_id: t.trait_id,
+      zygosity: t.zygosity,
+    }));
+  } else {
+    name.value = '';
+    speciesId.value = null;
+    sex.value = 'U';
+    hatchDate.value = '';
+    acquiredDate.value = '';
+    status.value = 'AVAILABLE';
+    priceUsd.value = '';
+    notes.value = '';
+    traits.value = [];
+  }
+}
+
+watch(open, (v) => {
+  if (v) reset();
+});
+
+const { data: speciesList } = useSpecies();
+const { data: allTraits } = useTraits();
+
+const traitsForSpecies = computed(() => {
+  if (!speciesId.value || !allTraits.value) return [];
+  return allTraits.value.filter((t) => t.species_id === speciesId.value);
+});
+
+const traitById = computed(() => {
+  const m = new Map<number, { trait_name: string; trait_code: string }>();
+  for (const t of allTraits.value ?? []) {
+    m.set(t.id, { trait_name: t.trait_name, trait_code: t.trait_code });
+  }
+  return m;
+});
+
+// When species changes, drop trait rows that don't belong to the new species
+watch(speciesId, (sp) => {
+  if (!sp) return;
+  const valid = new Set((allTraits.value ?? []).filter((t) => t.species_id === sp).map((t) => t.id));
+  traits.value = traits.value.filter((row) => valid.has(row.trait_id));
+});
+
+function addTrait() {
+  const available = traitsForSpecies.value.filter(
+    (t) => !traits.value.find((row) => row.trait_id === t.id),
+  );
+  if (!available.length) return;
+  traits.value.push({ trait_id: available[0].id, zygosity: 'HOM' });
+}
+
+function removeTrait(idx: number) {
+  traits.value.splice(idx, 1);
+}
+
+const createMut = useCreateGecko();
+const updateMut = useUpdateGecko();
+const saving = computed(() => createMut.isPending.value || updateMut.isPending.value);
+
+async function submit() {
+  if (!speciesId.value) {
+    toast.error('Species is required.');
+    return;
+  }
+  const payload: GeckoWritePayload = {
+    name: name.value.trim(),
+    species_id: speciesId.value,
+    sex: sex.value,
+    hatch_date: hatchDate.value,
+    acquired_date: acquiredDate.value,
+    status: status.value,
+    sire_id: null,
+    dam_id: null,
+    list_price_usd: priceUsd.value.trim(),
+    notes: notes.value.trim(),
+    traits: traits.value,
+  };
+
+  try {
+    const result = props.gecko
+      ? await updateMut.mutateAsync({ id: props.gecko.id, payload })
+      : await createMut.mutateAsync(payload);
+
+    toast.success(props.gecko ? 'Gecko updated.' : `Created ${result.code}.`);
+    emit('saved', result);
+    open.value = false;
+  } catch (e: unknown) {
+    const msg =
+      (e as any)?.response?.data?.error ??
+      (e as Error).message ??
+      'Save failed';
+    toast.error(String(msg));
+  }
+}
+
+const statuses: GeckoStatus[] = [
+  'AVAILABLE', 'HOLD', 'BREEDING', 'PERSONAL', 'SOLD', 'DECEASED',
+];
+
+const zygosities: Zygosity[] = ['HOM', 'HET', 'POSS_HET'];
+</script>
+
+<template>
+  <DialogRoot v-model:open="open">
+    <DialogPortal>
+      <DialogOverlay
+        class="fixed inset-0 z-50 bg-brand-dark-950/40 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+      />
+      <DialogContent
+        class="fixed inset-y-0 right-0 z-50 w-[min(560px,100vw)] bg-brand-cream-50 border-l border-brand-cream-300 shadow-2xl overflow-hidden flex flex-col data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right data-[state=closed]:duration-300 data-[state=open]:duration-500"
+        aria-describedby=""
+      >
+        <!-- Header -->
+        <div class="flex items-start justify-between px-6 py-5 border-b border-brand-cream-200 shrink-0">
+          <div class="flex flex-col gap-1">
+            <span class="text-xs uppercase tracking-[0.16em] text-brand-gold-700 font-semibold">
+              {{ isEdit ? 'Edit' : 'New gecko' }}
+            </span>
+            <h2 class="font-serif text-2xl text-brand-dark-950 leading-tight">
+              {{ isEdit ? `Edit ${gecko?.name || gecko?.code}` : 'Add a gecko' }}
+            </h2>
+            <div v-if="!isEdit" class="flex items-center gap-1 text-xs text-brand-dark-600 mt-1">
+              <Info class="size-3" />
+              Code auto-generated on save (e.g. ZGLP-2026-007)
+            </div>
+            <div v-else class="text-xs text-brand-dark-500 font-mono mt-1">{{ gecko?.code }}</div>
+          </div>
+          <DialogClose
+            class="rounded-md p-1 text-brand-dark-600 hover:bg-brand-cream-200 hover:text-brand-dark-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Close"
+          >
+            <X class="size-5" />
+          </DialogClose>
+        </div>
+
+        <!-- Body (scrolling) -->
+        <div class="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+          <div class="flex flex-col gap-2">
+            <Label for="gf-name">Name</Label>
+            <Input id="gf-name" v-model="name" placeholder="e.g. Apsara" class="bg-white" />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-2">
+              <Label for="gf-species">Species <span class="text-destructive">*</span></Label>
+              <select
+                id="gf-species"
+                v-model="speciesId"
+                class="h-9 rounded-md border border-brand-cream-300 bg-white px-3 text-sm"
+              >
+                <option :value="null" disabled>Choose species…</option>
+                <option v-for="s in speciesList ?? []" :key="s.id" :value="s.id">
+                  {{ s.common_name }} ({{ s.code }})
+                </option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-2">
+              <Label>Sex</Label>
+              <div
+                class="inline-flex items-center rounded-md border border-brand-cream-300 bg-white p-0.5 w-fit"
+              >
+                <button
+                  v-for="opt in (['M','F','U'] as const)"
+                  :key="opt"
+                  type="button"
+                  class="px-3 h-8 rounded text-xs font-medium transition-colors"
+                  :class="
+                    sex === opt
+                      ? 'bg-brand-gold-100 text-brand-gold-800'
+                      : 'text-brand-dark-600 hover:bg-brand-cream-100'
+                  "
+                  @click="sex = opt"
+                >
+                  {{ opt === 'M' ? 'Male' : opt === 'F' ? 'Female' : 'Unsexed' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-2">
+              <Label for="gf-hatch">Hatch date</Label>
+              <Input
+                id="gf-hatch" v-model="hatchDate" type="date" class="bg-white" />
+            </div>
+            <div class="flex flex-col gap-2">
+              <Label for="gf-acquired">Acquired date</Label>
+              <Input
+                id="gf-acquired" v-model="acquiredDate" type="date" class="bg-white" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-2">
+              <Label for="gf-status">Status</Label>
+              <select
+                id="gf-status"
+                v-model="status"
+                class="h-9 rounded-md border border-brand-cream-300 bg-white px-3 text-sm"
+              >
+                <option v-for="s in statuses" :key="s" :value="s">{{ s }}</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-2">
+              <Label for="gf-price">List price (USD)</Label>
+              <Input
+                id="gf-price"
+                v-model="priceUsd"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="e.g. 180"
+                class="bg-white"
+              />
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <Label for="gf-notes">Notes</Label>
+            <textarea
+              id="gf-notes"
+              v-model="notes"
+              rows="3"
+              placeholder="Anything worth remembering — temperament, line, holdback reason…"
+              class="rounded-md border border-brand-cream-300 bg-white px-3 py-2 text-sm resize-y"
+            />
+          </div>
+
+          <Separator />
+
+          <!-- Traits -->
+          <div class="flex flex-col gap-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="font-serif text-lg">Genetics</h3>
+                <p class="text-xs text-brand-dark-600">
+                  Traits are filtered by species — pick species first.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                :disabled="!speciesId || traitsForSpecies.length === 0"
+                @click="addTrait"
+              >
+                <Plus class="size-4" /> Add trait
+              </Button>
+            </div>
+
+            <div
+              v-if="!traits.length"
+              class="rounded-lg border border-dashed border-brand-cream-400 bg-brand-cream-50 p-4 text-sm text-brand-dark-500 text-center"
+            >
+              No traits assigned yet.
+            </div>
+
+            <ul v-else class="flex flex-col gap-2">
+              <li
+                v-for="(row, idx) in traits"
+                :key="idx"
+                class="flex items-center gap-2 rounded-lg border border-brand-cream-300 bg-white p-2"
+              >
+                <select
+                  v-model="row.trait_id"
+                  class="flex-1 h-8 rounded border border-brand-cream-300 bg-white px-2 text-sm"
+                >
+                  <option
+                    v-for="t in traitsForSpecies"
+                    :key="t.id"
+                    :value="t.id"
+                    :disabled="
+                      traits.some((r, i) => i !== idx && r.trait_id === t.id)
+                    "
+                  >
+                    {{ t.trait_name }}<span v-if="t.trait_code"> ({{ t.trait_code }})</span>
+                  </option>
+                </select>
+                <select
+                  v-model="row.zygosity"
+                  class="h-8 rounded border border-brand-cream-300 bg-white px-2 text-xs"
+                >
+                  <option v-for="z in zygosities" :key="z" :value="z">{{ z }}</option>
+                </select>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Remove trait"
+                  @click="removeTrait(idx)"
+                >
+                  <Trash2 class="size-4 text-red-700" />
+                </Button>
+              </li>
+            </ul>
+
+            <div v-if="isEdit && traits.length" class="flex flex-wrap gap-1 pt-1">
+              <Badge
+                v-for="(t, i) in traits"
+                :key="i"
+                variant="soft"
+                class="text-[10px]"
+              >
+                {{ traitById.get(t.trait_id)?.trait_name ?? t.trait_id }} ({{ t.zygosity }})
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="shrink-0 border-t border-brand-cream-200 p-4 flex items-center justify-end gap-2 bg-brand-cream-50">
+          <Button variant="ghost" :disabled="saving" @click="open = false">Cancel</Button>
+          <Button :disabled="saving" @click="submit">
+            {{ saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create gecko' }}
+          </Button>
+        </div>
+      </DialogContent>
+    </DialogPortal>
+  </DialogRoot>
+</template>

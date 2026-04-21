@@ -9,11 +9,14 @@ import { Plus, Search, Filter, AlertTriangle } from 'lucide-vue-next';
 import PageHeader from '@/components/layout/PageHeader.vue';
 import EmptyState from '@/components/layout/EmptyState.vue';
 import GeckoCard from '@/components/GeckoCard.vue';
+import GeckoFormSheet from '@/components/GeckoFormSheet.vue';
 import { useGeckos } from '@/composables/useGeckos';
 import type { GeckoStatus } from '@/types/gecko';
 import { STATUS_LABEL } from '@/types/gecko';
 
 const { data, isLoading, isError, error, refetch } = useGeckos();
+
+const createOpen = ref(false);
 
 const search = ref('');
 const statusFilter = ref<GeckoStatus | 'ALL'>('ALL');
@@ -72,7 +75,7 @@ function statusLabel(s: GeckoStatus | 'ALL') {
   <div class="flex flex-col gap-8">
     <PageHeader eyebrow="Collection" title="Geckos" subtitle="Everyone currently in the rack.">
       <template #actions>
-        <Button variant="default" size="sm">
+        <Button variant="default" size="sm" @click="createOpen = true">
           <Plus class="size-4" />
           Add gecko
         </Button>
@@ -185,5 +188,8 @@ function statusLabel(s: GeckoStatus | 'ALL') {
         <Button variant="outline" size="sm" @click="clearFilters">Clear filters</Button>
       </template>
     </EmptyState>
+
+    <!-- Create gecko drawer -->
+    <GeckoFormSheet v-model:open="createOpen" />
   </div>
 </template>
