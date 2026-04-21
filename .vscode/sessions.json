@@ -34,6 +34,15 @@
                     "commands": [
                         "cd apps/admin && bun run dev"
                     ]
+                },
+                {
+                    "name": "storefront",
+                    "icon": "globe",
+                    "color": "terminal.ansiYellow",
+                    "autoExecuteCommands": true,
+                    "commands": [
+                        "cd apps/storefront && bun run dev"
+                    ]
                 }
             ],
             {
@@ -71,6 +80,15 @@
                     "autoExecuteCommands": true,
                     "commands": [
                         "cd apps/admin && bun run test"
+                    ]
+                },
+                {
+                    "name": "storefront-tests",
+                    "icon": "beaker",
+                    "color": "terminal.ansiYellow",
+                    "autoExecuteCommands": true,
+                    "commands": [
+                        "cd apps/storefront && bun run test"
                     ]
                 }
             ]
