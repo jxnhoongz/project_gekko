@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import GeckoPicker from '@/components/GeckoPicker.vue';
 import { X, Plus, Trash2, Info, Upload, ImageOff } from 'lucide-vue-next';
 import {
   useSpecies,
@@ -51,6 +52,9 @@ interface TraitRow {
 }
 const traits = ref<TraitRow[]>([]);
 
+const sireId = ref<number | null>(null);
+const damId  = ref<number | null>(null);
+
 function reset() {
   const g = props.gecko;
   if (g) {
@@ -66,6 +70,8 @@ function reset() {
       trait_id: t.trait_id,
       zygosity: t.zygosity,
     }));
+    sireId.value = g.sire_id;
+    damId.value = g.dam_id;
   } else {
     name.value = '';
     speciesId.value = null;
@@ -76,6 +82,8 @@ function reset() {
     priceUsd.value = '';
     notes.value = '';
     traits.value = [];
+    sireId.value = null;
+    damId.value = null;
   }
 }
 
@@ -104,6 +112,8 @@ watch(speciesId, (sp) => {
   if (!sp) return;
   const valid = new Set((allTraits.value ?? []).filter((t) => t.species_id === sp).map((t) => t.id));
   traits.value = traits.value.filter((row) => valid.has(row.trait_id));
+  sireId.value = null;
+  damId.value = null;
 });
 
 function addTrait() {
@@ -194,8 +204,8 @@ async function submit() {
     hatch_date: hatchDate.value,
     acquired_date: acquiredDate.value,
     status: status.value,
-    sire_id: null,
-    dam_id: null,
+    sire_id: sireId.value,
+    dam_id: damId.value,
     list_price_usd: priceUsd.value.trim(),
     notes: notes.value.trim(),
     traits: traits.value,
@@ -312,6 +322,29 @@ const zygosities: Zygosity[] = ['HOM', 'HET', 'POSS_HET'];
               <Label for="gf-acquired">Acquired date</Label>
               <Input
                 id="gf-acquired" v-model="acquiredDate" type="date" class="bg-white" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-2">
+              <Label>Sire</Label>
+              <GeckoPicker
+                v-model="sireId"
+                :species-id="speciesId"
+                sex="M"
+                :exclude-id="gecko?.id"
+                placeholder="Search sires…"
+              />
+            </div>
+            <div class="flex flex-col gap-2">
+              <Label>Dam</Label>
+              <GeckoPicker
+                v-model="damId"
+                :species-id="speciesId"
+                sex="F"
+                :exclude-id="gecko?.id"
+                placeholder="Search dams…"
+              />
             </div>
           </div>
 
