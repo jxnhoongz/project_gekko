@@ -54,7 +54,6 @@ export interface Gecko {
   status: GeckoStatus;
   sire_id: number | null;
   dam_id: number | null;
-  list_price_usd: string | null;
   notes: string;
   created_at: string;
   traits: GeckoTrait[];

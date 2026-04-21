@@ -13,7 +13,6 @@ export interface GeckoWritePayload {
   status: string;
   sire_id: number | null;
   dam_id: number | null;
-  list_price_usd: string;
   notes: string;
   traits: { trait_id: number; zygosity: 'HOM' | 'HET' | 'POSS_HET' }[];
 }
