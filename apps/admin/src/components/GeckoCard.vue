@@ -103,7 +103,7 @@ function open() {
         </div>
         <div class="flex items-center gap-1.5">
           <span class="text-brand-dark-600">Traits</span>
-          <span class="font-medium text-brand-dark-950">{{ gecko.traits.length }}</span>
+          <span class="font-medium text-brand-dark-950">{{ (gecko.traits ?? []).length }}</span>
         </div>
       </div>
     </div>

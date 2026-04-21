@@ -49,7 +49,7 @@ const filtered = computed(() => {
     if (statusFilter.value !== 'ALL' && g.status !== statusFilter.value) return false;
     if (speciesFilter.value !== 'ALL' && g.species_code !== speciesFilter.value) return false;
     if (!q) return true;
-    const morphStr = g.traits.map((t) => t.trait_name).join(' ').toLowerCase();
+    const morphStr = (g.traits ?? []).map((t) => t.trait_name).join(' ').toLowerCase();
     return (
       g.name?.toLowerCase().includes(q) ||
       g.code.toLowerCase().includes(q) ||

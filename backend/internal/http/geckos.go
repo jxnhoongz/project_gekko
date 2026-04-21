@@ -203,6 +203,11 @@ func (d *geckosDeps) listGeckos(w http.ResponseWriter, r *http.Request) {
 		if u, ok := coverByGecko[g.ID]; ok {
 			cover = &u
 		}
+		// Always emit an array (never null) so the frontend can iterate safely.
+		traits := genesByGecko[g.ID]
+		if traits == nil {
+			traits = []geckoGeneDTO{}
+		}
 		out = append(out, geckoDTO{
 			ID:            g.ID,
 			Code:          g.Code,
@@ -219,7 +224,7 @@ func (d *geckosDeps) listGeckos(w http.ResponseWriter, r *http.Request) {
 			ListPriceUsd:  numericOrNil(g.ListPriceUsd),
 			Notes:         textOrEmpty(g.Notes),
 			CreatedAt:     g.CreatedAt.Time,
-			Traits:        genesByGecko[g.ID],
+			Traits:        traits,
 			CoverPhotoUrl: cover,
 		})
 	}

@@ -62,12 +62,13 @@ export interface Gecko {
   photos?: GeckoPhoto[];
 }
 
-/** Derive a human-readable morph string from trait list. */
-export function morphFromTraits(traits: GeckoTrait[]): string {
-  if (!traits.length) return 'Normal';
-  const hom = traits.filter((t) => t.zygosity === 'HOM').map((t) => t.trait_name);
-  const het = traits.filter((t) => t.zygosity === 'HET').map((t) => t.trait_name);
-  const possHet = traits
+/** Derive a human-readable morph string from trait list. Null-safe. */
+export function morphFromTraits(traits: GeckoTrait[] | null | undefined): string {
+  const list = traits ?? [];
+  if (!list.length) return 'Normal';
+  const hom = list.filter((t) => t.zygosity === 'HOM').map((t) => t.trait_name);
+  const het = list.filter((t) => t.zygosity === 'HET').map((t) => t.trait_name);
+  const possHet = list
     .filter((t) => t.zygosity === 'POSS_HET')
     .map((t) => t.trait_name);
 
