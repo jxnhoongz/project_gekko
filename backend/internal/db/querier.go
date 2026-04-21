@@ -6,15 +6,37 @@ package db
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
 	CountAdmins(ctx context.Context) (int64, error)
+	CountGeckos(ctx context.Context) (int64, error)
+	CountGeckosByStatus(ctx context.Context) ([]CountGeckosByStatusRow, error)
 	CountWaitlistEntries(ctx context.Context) (int64, error)
 	CreateAdmin(ctx context.Context, arg CreateAdminParams) (AdminUser, error)
+	CreateGecko(ctx context.Context, arg CreateGeckoParams) (Gecko, error)
+	CreateGeckoGene(ctx context.Context, arg CreateGeckoGeneParams) (GeckoGene, error)
+	CreateMedia(ctx context.Context, arg CreateMediaParams) (Medium, error)
+	CreateSpecies(ctx context.Context, arg CreateSpeciesParams) (Species, error)
+	CreateTrait(ctx context.Context, arg CreateTraitParams) (GeneticDictionary, error)
 	CreateWaitlistEntry(ctx context.Context, arg CreateWaitlistEntryParams) (WaitlistEntry, error)
 	GetAdminByEmail(ctx context.Context, lower string) (AdminUser, error)
 	GetAdminByID(ctx context.Context, id int32) (AdminUser, error)
+	GetCoverForGecko(ctx context.Context, geckoID pgtype.Int4) (Medium, error)
+	GetGeckoByCode(ctx context.Context, code string) (GetGeckoByCodeRow, error)
+	GetGeckoByID(ctx context.Context, id int32) (GetGeckoByIDRow, error)
+	GetSpeciesByCode(ctx context.Context, code SpeciesCode) (Species, error)
+	GetSpeciesByID(ctx context.Context, id int32) (Species, error)
+	GetTraitByNameAndSpecies(ctx context.Context, arg GetTraitByNameAndSpeciesParams) (GeneticDictionary, error)
+	ListGeckoGenes(ctx context.Context) ([]ListGeckoGenesRow, error)
+	ListGeckos(ctx context.Context) ([]ListGeckosRow, error)
+	ListGenesForGecko(ctx context.Context, geckoID int32) ([]ListGenesForGeckoRow, error)
+	ListMediaForGecko(ctx context.Context, geckoID pgtype.Int4) ([]Medium, error)
+	ListSpecies(ctx context.Context) ([]Species, error)
+	ListTraits(ctx context.Context) ([]GeneticDictionary, error)
+	ListTraitsBySpecies(ctx context.Context, speciesID int32) ([]GeneticDictionary, error)
 	ListWaitlistEntries(ctx context.Context, arg ListWaitlistEntriesParams) ([]WaitlistEntry, error)
 }
 

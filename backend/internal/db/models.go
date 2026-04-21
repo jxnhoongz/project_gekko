@@ -5,8 +5,229 @@
 package db
 
 import (
+	"database/sql/driver"
+	"fmt"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type GeckoStatus string
+
+const (
+	GeckoStatusAVAILABLE GeckoStatus = "AVAILABLE"
+	GeckoStatusHOLD      GeckoStatus = "HOLD"
+	GeckoStatusBREEDING  GeckoStatus = "BREEDING"
+	GeckoStatusPERSONAL  GeckoStatus = "PERSONAL"
+	GeckoStatusSOLD      GeckoStatus = "SOLD"
+	GeckoStatusDECEASED  GeckoStatus = "DECEASED"
+)
+
+func (e *GeckoStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = GeckoStatus(s)
+	case string:
+		*e = GeckoStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for GeckoStatus: %T", src)
+	}
+	return nil
+}
+
+type NullGeckoStatus struct {
+	GeckoStatus GeckoStatus `json:"gecko_status"`
+	Valid       bool        `json:"valid"` // Valid is true if GeckoStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullGeckoStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.GeckoStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.GeckoStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullGeckoStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.GeckoStatus), nil
+}
+
+type MediaType string
+
+const (
+	MediaTypePROFILE   MediaType = "PROFILE"
+	MediaTypeGALLERY   MediaType = "GALLERY"
+	MediaTypeHUSBANDRY MediaType = "HUSBANDRY"
+)
+
+func (e *MediaType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = MediaType(s)
+	case string:
+		*e = MediaType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for MediaType: %T", src)
+	}
+	return nil
+}
+
+type NullMediaType struct {
+	MediaType MediaType `json:"media_type"`
+	Valid     bool      `json:"valid"` // Valid is true if MediaType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullMediaType) Scan(value interface{}) error {
+	if value == nil {
+		ns.MediaType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.MediaType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullMediaType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.MediaType), nil
+}
+
+type Sex string
+
+const (
+	SexM Sex = "M"
+	SexF Sex = "F"
+	SexU Sex = "U"
+)
+
+func (e *Sex) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = Sex(s)
+	case string:
+		*e = Sex(s)
+	default:
+		return fmt.Errorf("unsupported scan type for Sex: %T", src)
+	}
+	return nil
+}
+
+type NullSex struct {
+	Sex   Sex  `json:"sex"`
+	Valid bool `json:"valid"` // Valid is true if Sex is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullSex) Scan(value interface{}) error {
+	if value == nil {
+		ns.Sex, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.Sex.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullSex) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.Sex), nil
+}
+
+type SpeciesCode string
+
+const (
+	SpeciesCodeLP SpeciesCode = "LP"
+	SpeciesCodeAF SpeciesCode = "AF"
+	SpeciesCodeCR SpeciesCode = "CR"
+)
+
+func (e *SpeciesCode) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = SpeciesCode(s)
+	case string:
+		*e = SpeciesCode(s)
+	default:
+		return fmt.Errorf("unsupported scan type for SpeciesCode: %T", src)
+	}
+	return nil
+}
+
+type NullSpeciesCode struct {
+	SpeciesCode SpeciesCode `json:"species_code"`
+	Valid       bool        `json:"valid"` // Valid is true if SpeciesCode is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullSpeciesCode) Scan(value interface{}) error {
+	if value == nil {
+		ns.SpeciesCode, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.SpeciesCode.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullSpeciesCode) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.SpeciesCode), nil
+}
+
+type Zygosity string
+
+const (
+	ZygosityHOM     Zygosity = "HOM"
+	ZygosityHET     Zygosity = "HET"
+	ZygosityPOSSHET Zygosity = "POSS_HET"
+)
+
+func (e *Zygosity) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = Zygosity(s)
+	case string:
+		*e = Zygosity(s)
+	default:
+		return fmt.Errorf("unsupported scan type for Zygosity: %T", src)
+	}
+	return nil
+}
+
+type NullZygosity struct {
+	Zygosity Zygosity `json:"zygosity"`
+	Valid    bool     `json:"valid"` // Valid is true if Zygosity is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullZygosity) Scan(value interface{}) error {
+	if value == nil {
+		ns.Zygosity, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.Zygosity.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullZygosity) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.Zygosity), nil
+}
 
 type AdminUser struct {
 	ID           int32            `json:"id"`
@@ -15,6 +236,62 @@ type AdminUser struct {
 	Name         pgtype.Text      `json:"name"`
 	CreatedAt    pgtype.Timestamp `json:"created_at"`
 	UpdatedAt    pgtype.Timestamp `json:"updated_at"`
+}
+
+type Gecko struct {
+	ID           int32            `json:"id"`
+	Code         string           `json:"code"`
+	Name         pgtype.Text      `json:"name"`
+	SpeciesID    int32            `json:"species_id"`
+	Sex          Sex              `json:"sex"`
+	HatchDate    pgtype.Date      `json:"hatch_date"`
+	AcquiredDate pgtype.Date      `json:"acquired_date"`
+	Status       GeckoStatus      `json:"status"`
+	SireID       pgtype.Int4      `json:"sire_id"`
+	DamID        pgtype.Int4      `json:"dam_id"`
+	ListPriceUsd pgtype.Numeric   `json:"list_price_usd"`
+	Notes        pgtype.Text      `json:"notes"`
+	CreatedAt    pgtype.Timestamp `json:"created_at"`
+	UpdatedAt    pgtype.Timestamp `json:"updated_at"`
+}
+
+type GeckoGene struct {
+	ID        int32            `json:"id"`
+	GeckoID   int32            `json:"gecko_id"`
+	TraitID   int32            `json:"trait_id"`
+	Zygosity  Zygosity         `json:"zygosity"`
+	CreatedAt pgtype.Timestamp `json:"created_at"`
+}
+
+type GeneticDictionary struct {
+	ID          int32            `json:"id"`
+	SpeciesID   int32            `json:"species_id"`
+	TraitName   string           `json:"trait_name"`
+	TraitCode   pgtype.Text      `json:"trait_code"`
+	Description pgtype.Text      `json:"description"`
+	IsDominant  bool             `json:"is_dominant"`
+	CreatedAt   pgtype.Timestamp `json:"created_at"`
+	UpdatedAt   pgtype.Timestamp `json:"updated_at"`
+}
+
+type Medium struct {
+	ID           int32            `json:"id"`
+	GeckoID      pgtype.Int4      `json:"gecko_id"`
+	Url          string           `json:"url"`
+	Type         MediaType        `json:"type"`
+	Caption      pgtype.Text      `json:"caption"`
+	DisplayOrder int32            `json:"display_order"`
+	UploadedAt   pgtype.Timestamp `json:"uploaded_at"`
+}
+
+type Species struct {
+	ID             int32            `json:"id"`
+	Code           SpeciesCode      `json:"code"`
+	CommonName     string           `json:"common_name"`
+	ScientificName pgtype.Text      `json:"scientific_name"`
+	Description    pgtype.Text      `json:"description"`
+	CreatedAt      pgtype.Timestamp `json:"created_at"`
+	UpdatedAt      pgtype.Timestamp `json:"updated_at"`
 }
 
 type WaitlistEntry struct {
