@@ -16,6 +16,7 @@ const routes: RouteRecordRaw[] = [
       { path: '',              name: 'dashboard', component: () => import('@/views/DashboardView.vue') },
       { path: 'geckos',        name: 'geckos',    component: () => import('@/views/GeckosView.vue') },
       { path: 'geckos/:id',    name: 'gecko-detail', component: () => import('@/views/GeckoDetailView.vue'), props: true },
+      { path: 'listings',      name: 'listings',  component: () => import('@/views/ListingsView.vue') },
       { path: 'waitlist',      name: 'waitlist',  component: () => import('@/views/WaitlistView.vue') },
       { path: 'sales',         name: 'sales',     component: () => import('@/views/SalesView.vue') },
       { path: 'photos',        name: 'photos',    component: () => import('@/views/PhotosView.vue') },

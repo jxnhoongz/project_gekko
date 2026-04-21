@@ -22,7 +22,7 @@ export function useListings() {
     queryKey: listingKeys.list(),
     queryFn: async () => {
       const { data } = await api.get<ListingsListResponse>('/api/listings');
-      return data.listings;
+      return data;
     },
     staleTime: 30_000,
   });

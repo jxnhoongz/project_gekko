@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router';
 import {
   LayoutDashboard,
   Turtle,
+  Tag,
   ClipboardList,
   DollarSign,
   Image,
@@ -36,6 +37,7 @@ interface NavItem {
 const nav: NavItem[] = [
   { name: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { name: 'geckos',    label: 'Geckos',    icon: Turtle },
+  { name: 'listings',  label: 'Listings',  icon: Tag },
   { name: 'waitlist',  label: 'Waitlist',  icon: ClipboardList },
   { name: 'sales',     label: 'Sales',     icon: DollarSign },
   { name: 'photos',    label: 'Photos',    icon: Image },

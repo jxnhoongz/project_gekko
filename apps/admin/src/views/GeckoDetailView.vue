@@ -15,6 +15,7 @@ import {
   HelpCircle,
   Scale,
   Sparkles,
+  Tag,
   Image as ImageIcon,
   Plus,
   AlertTriangle,
@@ -25,9 +26,12 @@ import EmptyState from '@/components/layout/EmptyState.vue';
 import LowPolyGecko from '@/components/art/LowPolyGecko.vue';
 import WeightSparkline from '@/components/WeightSparkline.vue';
 import GeckoFormSheet from '@/components/GeckoFormSheet.vue';
+import ListingFormSheet from '@/components/ListingFormSheet.vue';
 import { useGecko, useDeleteGecko } from '@/composables/useGeckos';
+import { useListings } from '@/composables/useListings';
 import type { GeckoStatus, Sex, Zygosity } from '@/types/gecko';
 import { morphFromTraits, STATUS_LABEL, SEX_LABEL } from '@/types/gecko';
+import { LISTING_STATUS_LABEL, LISTING_TYPE_LABEL, type Listing } from '@/types/listing';
 import { formatDate, ageFromBirth } from '@/lib/format';
 
 const props = defineProps<{ id: string }>();
@@ -38,6 +42,23 @@ const { data: gecko, isLoading, isError, error } = useGecko(idNum);
 
 const editOpen = ref(false);
 const deleteMut = useDeleteGecko();
+
+const { data: listingsData } = useListings();
+const attachedListings = computed((): Listing[] => {
+  if (!gecko.value || !listingsData.value) return [];
+  const g = gecko.value;
+  return listingsData.value.listings.filter(
+    (l) => l.type === 'GECKO' && l.title === (g.name || g.code),
+  );
+});
+
+const listingOpen = ref(false);
+const listingDraft = ref<Listing | null>(null);
+
+function openCreateListingForGecko() {
+  listingDraft.value = null;
+  listingOpen.value = true;
+}
 
 async function onDelete() {
   if (!gecko.value) return;
@@ -192,6 +213,39 @@ function back() {
         </div>
       </div>
     </Card>
+
+    <!-- Listings (commerce) -->
+    <section class="flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <Tag class="size-4 text-brand-gold-700" />
+          <h3 class="font-serif text-xl text-brand-dark-950">Listings</h3>
+        </div>
+        <Button variant="outline" size="sm" @click="openCreateListingForGecko">
+          <Plus class="size-4" /> Create listing
+        </Button>
+      </div>
+      <div v-if="attachedListings.length" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div
+          v-for="l in attachedListings"
+          :key="l.id"
+          class="rounded-lg border border-brand-cream-300 bg-brand-cream-50 p-3 flex items-center gap-3 cursor-pointer hover:bg-brand-cream-100"
+          @click="listingDraft = l; listingOpen = true"
+        >
+          <div class="flex flex-col min-w-0 flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <Badge variant="soft">{{ LISTING_TYPE_LABEL[l.type] }}</Badge>
+              <Badge :variant="l.status === 'LISTED' ? 'success' : 'muted'">{{ LISTING_STATUS_LABEL[l.status] }}</Badge>
+            </div>
+            <span class="text-sm font-medium text-brand-dark-950 truncate">{{ l.title }}</span>
+          </div>
+          <div class="text-brand-gold-700 font-semibold">${{ l.price_usd }}</div>
+        </div>
+      </div>
+      <p v-else class="text-sm text-brand-dark-500">
+        No listings for this gecko yet. Click "Create listing" to add one.
+      </p>
+    </section>
 
     <!-- Tabs -->
     <Tabs default-value="overview">
@@ -351,6 +405,7 @@ function back() {
 
     <!-- Edit drawer -->
     <GeckoFormSheet v-model:open="editOpen" :gecko="gecko" />
+    <ListingFormSheet v-model:open="listingOpen" :listing="listingDraft" />
   </div>
   </div>
 </template>
