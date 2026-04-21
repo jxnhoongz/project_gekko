@@ -69,6 +69,7 @@ func main() {
 	apihttp.MountSchema(r, pool, signer)
 	apihttp.MountGeckos(r, pool, signer)
 	apihttp.MountMedia(r, pool, signer, cfg)
+	apihttp.MountDashboard(r, pool, signer)
 
 	log.Info().Msgf("listening on :%s", cfg.Port)
 	if err := nethttp.ListenAndServe(":"+cfg.Port, r); err != nil {
