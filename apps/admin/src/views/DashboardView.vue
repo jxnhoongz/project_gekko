@@ -6,13 +6,13 @@ import {
   Heart,
   Egg,
   ClipboardList,
-  Drumstick,
   ArrowRight,
   CircleAlert,
   Image as ImageIcon,
   Pause,
   AlertTriangle,
 } from 'lucide-vue-next';
+import type { LucideIcon } from 'lucide-vue-next';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -45,7 +45,7 @@ const needsAttention = computed<DashboardItem[]>(() => data.value?.needs_attenti
 const recentActivity = computed<DashboardItem[]>(() => data.value?.recent_activity ?? []);
 const stats = computed(() => data.value?.stats);
 
-const attentionIcon: Record<DashboardItemKind, typeof Drumstick> = {
+const attentionIcon: Record<DashboardItemKind, LucideIcon> = {
   waitlist_stale:   ClipboardList,
   hold_stale:       Pause,
   // unused in this panel but typed for completeness
@@ -54,7 +54,7 @@ const attentionIcon: Record<DashboardItemKind, typeof Drumstick> = {
   media_uploaded:   ImageIcon,
 };
 
-const activityIcon: Record<DashboardItemKind, typeof Drumstick> = {
+const activityIcon: Record<DashboardItemKind, LucideIcon> = {
   gecko_created:    Turtle,
   waitlist_created: ClipboardList,
   media_uploaded:   ImageIcon,
