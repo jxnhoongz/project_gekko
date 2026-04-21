@@ -70,6 +70,7 @@ func main() {
 	apihttp.MountGeckos(r, pool, signer)
 	apihttp.MountMedia(r, pool, signer, cfg)
 	apihttp.MountDashboard(r, pool, signer)
+	apihttp.MountPublic(r, pool)
 
 	log.Info().Msgf("listening on :%s", cfg.Port)
 	if err := nethttp.ListenAndServe(":"+cfg.Port, r); err != nil {
