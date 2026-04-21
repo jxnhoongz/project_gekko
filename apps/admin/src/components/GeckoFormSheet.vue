@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import GeckoPicker from '@/components/GeckoPicker.vue';
-import { X, Plus, Trash2, Info, Upload, ImageOff } from 'lucide-vue-next';
+import { X, Plus, Trash2, Info, Upload, ImageOff, Star, Pencil } from 'lucide-vue-next';
 import {
   useSpecies,
   useTraits,
@@ -22,6 +22,8 @@ import {
   useUpdateGecko,
   useUploadGeckoMedia,
   useDeleteMedia,
+  useUpdateMedia,
+  useSetCoverMedia,
   type GeckoWritePayload,
 } from '@/composables/useGeckos';
 import type { Gecko, Zygosity, Sex, GeckoStatus } from '@/types/gecko';
@@ -132,6 +134,78 @@ const createMut = useCreateGecko();
 const updateMut = useUpdateGecko();
 const uploadMut = useUploadGeckoMedia();
 const deleteMediaMut = useDeleteMedia();
+const setCoverMut = useSetCoverMedia();
+const updateMediaMut = useUpdateMedia();
+
+const editingCaptionId = ref<number | null>(null);
+const draftCaption = ref('');
+
+function startEditCaption(mediaId: number, current: string) {
+  commitCaptionIfEditing(); // commit any other open edit first
+  editingCaptionId.value = mediaId;
+  draftCaption.value = current;
+}
+
+function cancelEditCaption() {
+  editingCaptionId.value = null;
+  draftCaption.value = '';
+}
+
+async function commitCaptionIfEditing() {
+  if (editingCaptionId.value === null) return;
+  if (!props.gecko) {
+    cancelEditCaption();
+    return;
+  }
+  const mediaId = editingCaptionId.value;
+  const next = draftCaption.value.trim();
+  const existing = photos.value.find((p) => p.id === mediaId);
+  if (!existing || existing.caption === next) {
+    cancelEditCaption();
+    return;
+  }
+  try {
+    const { media } = await updateMediaMut.mutateAsync({
+      mediaId,
+      geckoId: props.gecko.id,
+      patch: { caption: next },
+    });
+    const idx = photos.value.findIndex((p) => p.id === mediaId);
+    if (idx !== -1) {
+      photos.value[idx] = {
+        id: media.id,
+        url: media.url,
+        caption: media.caption,
+        display_order: media.display_order,
+      };
+    }
+  } catch (e: unknown) {
+    const msg = (e as any)?.response?.data?.error ?? (e as Error).message ?? 'Caption save failed';
+    toast.error(String(msg));
+  } finally {
+    cancelEditCaption();
+  }
+}
+
+async function setAsCover(mediaId: number) {
+  if (!props.gecko) return;
+  try {
+    await setCoverMut.mutateAsync({ mediaId, geckoId: props.gecko.id });
+    // Re-sequence local state: move target to index 0, rest preserve order.
+    const target = photos.value.find((p) => p.id === mediaId);
+    if (!target) return;
+    const rest = photos.value.filter((p) => p.id !== mediaId);
+    photos.value = [
+      { ...target, display_order: 0 },
+      ...rest.map((p, i) => ({ ...p, display_order: i + 1 })),
+    ];
+    toast.success('Cover updated.');
+  } catch (e: unknown) {
+    const msg = (e as any)?.response?.data?.error ?? (e as Error).message ?? 'Set cover failed';
+    toast.error(String(msg));
+  }
+}
+
 const saving = computed(() => createMut.isPending.value || updateMut.isPending.value);
 
 // Local photos state starts from the gecko's photos when the sheet opens
@@ -157,6 +231,7 @@ async function onFilesPicked(e: Event) {
   if (!files.length) return;
   input.value = '';
 
+  let successCount = 0;
   for (const f of files) {
     if (!f.type.startsWith('image/')) {
       toast.error(`${f.name}: not an image`);
@@ -174,11 +249,15 @@ async function onFilesPicked(e: Event) {
         caption: media.caption,
         display_order: media.display_order,
       });
+      successCount++;
     } catch (e: unknown) {
       const msg = (e as any)?.response?.data?.error ?? (e as Error).message ?? 'Upload failed';
       toast.error(`${f.name}: ${msg}`);
     }
   }
+
+  if (successCount === 1) toast.success('Uploaded.');
+  else if (successCount > 1) toast.success(`Uploaded ${successCount} photos.`);
 }
 
 async function removePhoto(mediaId: number) {
@@ -507,6 +586,21 @@ const zygosities: Zygosity[] = ['HOM', 'HET', 'POSS_HET'];
                 class="relative group aspect-square rounded-lg overflow-hidden border border-brand-cream-300 bg-white"
               >
                 <img :src="p.url" :alt="p.caption || 'gecko photo'" class="w-full h-full object-cover" />
+
+                <!-- Set-as-cover star (top-left) -->
+                <button
+                  type="button"
+                  class="absolute top-1 left-1 size-6 rounded-md bg-brand-dark-950/70 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-brand-gold-600"
+                  :class="{ 'opacity-100 !bg-brand-gold-600': p.display_order === 0 }"
+                  :aria-label="p.display_order === 0 ? 'Current cover' : 'Set as cover'"
+                  :title="p.display_order === 0 ? 'Current cover' : 'Set as cover'"
+                  :disabled="setCoverMut.isPending.value || p.display_order === 0"
+                  @click="setAsCover(p.id)"
+                >
+                  <Star class="size-3.5" :class="p.display_order === 0 ? 'fill-current' : ''" />
+                </button>
+
+                <!-- Delete (top-right) -->
                 <button
                   type="button"
                   class="absolute top-1 right-1 size-6 rounded-md bg-brand-dark-950/70 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-600"
@@ -515,6 +609,41 @@ const zygosities: Zygosity[] = ['HOM', 'HET', 'POSS_HET'];
                   @click="removePhoto(p.id)"
                 >
                   <Trash2 class="size-3.5" />
+                </button>
+
+                <!-- Caption ribbon (bottom) -->
+                <div
+                  v-if="editingCaptionId === p.id"
+                  class="absolute inset-x-0 bottom-0 bg-brand-dark-950/80 p-1.5 flex items-center gap-1"
+                >
+                  <input
+                    :value="draftCaption"
+                    type="text"
+                    maxlength="500"
+                    class="flex-1 bg-transparent text-xs text-white placeholder:text-brand-dark-300 outline-none"
+                    autofocus
+                    placeholder="Caption…"
+                    @input="(ev) => (draftCaption = (ev.target as HTMLInputElement).value)"
+                    @keydown.enter.prevent="commitCaptionIfEditing"
+                    @keydown.esc="cancelEditCaption"
+                    @blur="commitCaptionIfEditing"
+                  />
+                </div>
+                <button
+                  v-else-if="p.caption"
+                  type="button"
+                  class="absolute inset-x-0 bottom-0 bg-brand-dark-950/60 text-white text-xs px-2 py-1 text-left truncate hover:bg-brand-dark-950/80 transition-colors"
+                  @click="startEditCaption(p.id, p.caption)"
+                >
+                  {{ p.caption }}
+                </button>
+                <button
+                  v-else
+                  type="button"
+                  class="absolute inset-x-0 bottom-0 bg-brand-dark-950/50 text-white/70 text-xs px-2 py-1 text-left opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
+                  @click="startEditCaption(p.id, '')"
+                >
+                  <Pencil class="size-3" /> Add caption…
                 </button>
               </div>
             </div>
