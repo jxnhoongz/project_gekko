@@ -1,15 +1,9 @@
-import type { Feeding, WeightEntry, Shed, HealthLog, ActivityItem, UpcomingAction } from '@/types';
+import type { Feeding, WeightEntry, Shed, HealthLog } from '@/types';
 
 function daysAgo(n: number, hour = 19, minute = 0): string {
   const d = new Date();
   d.setDate(d.getDate() - n);
   d.setHours(hour, minute, 0, 0);
-  return d.toISOString();
-}
-
-function hoursFromNow(n: number): string {
-  const d = new Date();
-  d.setHours(d.getHours() + n, 0, 0, 0);
   return d.toISOString();
 }
 
@@ -69,23 +63,4 @@ export const healthLogs: HealthLog[] = [
     severity: 'Note',
     detail: 'Ate half portion for 3 days. Temps checked — now back to normal.',
   },
-];
-
-export const activity: ActivityItem[] = [
-  { id: 'ac_01', kind: 'waitlist', title: 'New waitlist entry',   detail: 'Kosal Ly — Crested / harlequin',  at: daysAgo(0, 9, 15) },
-  { id: 'ac_02', kind: 'feeding',  title: 'Fed Apsara',           detail: '4× Dubia roach',                   at: daysAgo(1, 19, 30), geckoId: 'gk_01' },
-  { id: 'ac_03', kind: 'weight',   title: 'Weight: Apsara',       detail: '72 g (+2)',                        at: daysAgo(1, 20, 0),  geckoId: 'gk_01' },
-  { id: 'ac_04', kind: 'feeding',  title: 'Fed Chandra',          detail: 'Pangea CGD, 3 ml — finished',      at: daysAgo(1, 20, 45), geckoId: 'gk_03' },
-  { id: 'ac_05', kind: 'feeding',  title: 'Fed Khmer',            detail: '4× Dubia roach',                   at: daysAgo(1, 21, 0),  geckoId: 'gk_05' },
-  { id: 'ac_06', kind: 'feeding',  title: 'Fed Rithy',            detail: '5× Dubia roach',                   at: daysAgo(2, 19, 45), geckoId: 'gk_02' },
-  { id: 'ac_07', kind: 'health',   title: 'Health note: Chandra', detail: 'Stuck shed cleared',               at: daysAgo(6, 22, 10), geckoId: 'gk_03' },
-  { id: 'ac_08', kind: 'shed',     title: 'Shed: Apsara',         detail: 'Complete shed',                     at: daysAgo(9, 8, 0),   geckoId: 'gk_01' },
-];
-
-export const upcoming: UpcomingAction[] = [
-  { id: 'up_01', kind: 'feeding',     title: 'Feed Apsara',        detail: '3 days since last feed',    dueAt: hoursFromNow(2),  geckoId: 'gk_01' },
-  { id: 'up_02', kind: 'feeding',     title: 'Feed Rithy',         detail: '2 days since last feed',    dueAt: hoursFromNow(4),  geckoId: 'gk_02' },
-  { id: 'up_03', kind: 'weigh',       title: 'Weigh Suri',         detail: 'Weekly weigh-in due',       dueAt: hoursFromNow(20), geckoId: 'gk_04' },
-  { id: 'up_04', kind: 'shed-check',  title: 'Shed check: Khmer',  detail: 'Last shed 20 days ago',     dueAt: hoursFromNow(-6), geckoId: 'gk_05', overdue: true },
-  { id: 'up_05', kind: 'pairing',     title: 'Pair Apsara × Rithy', detail: 'Introduce for 48h cycle',  dueAt: hoursFromNow(48), geckoId: 'gk_01' },
 ];

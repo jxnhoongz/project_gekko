@@ -1,1 +1,1 @@
-export { feedings, weights, sheds, healthLogs, activity, upcoming } from './history';
+export { feedings, weights, sheds, healthLogs } from './history';
