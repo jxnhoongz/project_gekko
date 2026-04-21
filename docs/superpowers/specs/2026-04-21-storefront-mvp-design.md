@@ -113,6 +113,13 @@ Validation:
 
 **Rate limiting:** simple in-memory map `ip -> [timestamps]`, prune older than 1 hour, reject with 429 when count > 5 in the last hour. Not cluster-safe, but fine for single-box MVP.
 
+Add this comment verbatim at the top of the rate-limit middleware so the scaling path is obvious when we hit it:
+
+```go
+// TODO: swap to Postgres- or Redis-backed limiter when we run more than
+// one backend instance, or when a second rate-limited endpoint appears.
+```
+
 ### New queries (sqlc)
 
 In `backend/internal/queries/public.sql`:
