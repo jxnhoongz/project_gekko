@@ -163,8 +163,12 @@ function linkFor(item: DashboardItem) {
           <li
             v-for="item in needsAttention"
             :key="`${item.kind}-${item.ref_id}`"
-            class="flex items-center gap-4 px-6 py-4 hover:bg-brand-cream-100/60 transition-colors cursor-pointer"
+            class="flex items-center gap-4 px-6 py-4 hover:bg-brand-cream-100/60 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold-500"
+            tabindex="0"
+            role="link"
             @click="router.push(linkFor(item))"
+            @keydown.enter="router.push(linkFor(item))"
+            @keydown.space.prevent="router.push(linkFor(item))"
           >
             <div
               class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-gold-100 text-brand-gold-800"
@@ -207,8 +211,12 @@ function linkFor(item: DashboardItem) {
           <li
             v-for="a in recentActivity"
             :key="`${a.kind}-${a.ref_id}-${a.at}`"
-            class="relative flex gap-3 pl-8 cursor-pointer hover:bg-brand-cream-100/40 -mx-2 px-2 rounded"
+            class="relative flex gap-3 pl-8 cursor-pointer hover:bg-brand-cream-100/40 -mx-2 px-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold-500"
+            tabindex="0"
+            role="link"
             @click="router.push(linkFor(a))"
+            @keydown.enter="router.push(linkFor(a))"
+            @keydown.space.prevent="router.push(linkFor(a))"
           >
             <span
               class="absolute left-0 top-0.5 flex size-6 items-center justify-center rounded-full bg-brand-gold-100 text-brand-gold-800 border border-brand-gold-200"
