@@ -127,6 +127,9 @@ var (
 // ---- handlers ----
 
 func (d *listingsDeps) list(w http.ResponseWriter, r *http.Request) {
+	// TODO: wire ?type= and ?status= query filters server-side once the
+	// admin UI grows past MVP. Current caller count is small so the
+	// frontend filters client-side.
 	rows, err := d.q.ListListings(r.Context())
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "list failed"})
@@ -142,7 +145,7 @@ func (d *listingsDeps) list(w http.ResponseWriter, r *http.Request) {
 			Title:          row.Title,
 			Description:    textOrEmpty(row.Description),
 			PriceUsd:       numericString(row.PriceUsd),
-			DepositUsd:     numericPtr(row.DepositUsd),
+			DepositUsd:     numericOrNil(row.DepositUsd),
 			Status:         string(row.Status),
 			CoverPhotoUrl:  textOrEmpty(row.CoverPhotoUrl),
 			ListedAt:       timestampPtr(row.ListedAt),
@@ -181,7 +184,7 @@ func (d *listingsDeps) get(w http.ResponseWriter, r *http.Request) {
 		Title:         row.Title,
 		Description:   textOrEmpty(row.Description),
 		PriceUsd:      numericString(row.PriceUsd),
-		DepositUsd:    numericPtr(row.DepositUsd),
+		DepositUsd:    numericOrNil(row.DepositUsd),
 		Status:        string(row.Status),
 		CoverPhotoUrl: textOrEmpty(row.CoverPhotoUrl),
 		ListedAt:      timestampPtr(row.ListedAt),
@@ -282,9 +285,17 @@ func (d *listingsDeps) create(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if strings.HasPrefix(strings.TrimSpace(req.PriceUsd), "-") {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "price_usd must be non-negative"})
+		return
+	}
 	price, err := parseNumeric(req.PriceUsd)
 	if err != nil || !price.Valid {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid price_usd"})
+		return
+	}
+	if strings.HasPrefix(strings.TrimSpace(req.DepositUsd), "-") {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "deposit_usd must be non-negative"})
 		return
 	}
 	deposit, err := parseNumeric(req.DepositUsd)
@@ -461,9 +472,17 @@ func (d *listingsDeps) update(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if strings.HasPrefix(strings.TrimSpace(req.PriceUsd), "-") {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "price_usd must be non-negative"})
+		return
+	}
 	price, err := parseNumeric(req.PriceUsd)
 	if err != nil || !price.Valid {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid price_usd"})
+		return
+	}
+	if strings.HasPrefix(strings.TrimSpace(req.DepositUsd), "-") {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "deposit_usd must be non-negative"})
 		return
 	}
 	deposit, err := parseNumeric(req.DepositUsd)
@@ -590,9 +609,6 @@ func numericString(n pgtype.Numeric) string {
 	}
 	return *s
 }
-
-// numericPtr is numericOrNil renamed for a slightly cleaner caller site.
-func numericPtr(n pgtype.Numeric) *string { return numericOrNil(n) }
 
 // timestampPtr converts a nullable pgtype.Timestamp to *time.Time.
 func timestampPtr(t pgtype.Timestamp) *time.Time {
