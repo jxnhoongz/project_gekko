@@ -11,6 +11,7 @@ import (
 )
 
 type Querier interface {
+	AttachGeckoToListing(ctx context.Context, arg AttachGeckoToListingParams) error
 	CountAdmins(ctx context.Context) (int64, error)
 	CountGeckos(ctx context.Context) (int64, error)
 	CountGeckosByStatus(ctx context.Context) ([]CountGeckosByStatusRow, error)
@@ -19,6 +20,7 @@ type Querier interface {
 	CreateAdmin(ctx context.Context, arg CreateAdminParams) (AdminUser, error)
 	CreateGecko(ctx context.Context, arg CreateGeckoParams) (Gecko, error)
 	CreateGeckoGene(ctx context.Context, arg CreateGeckoGeneParams) (GeckoGene, error)
+	CreateListing(ctx context.Context, arg CreateListingParams) (Listing, error)
 	CreateMedia(ctx context.Context, arg CreateMediaParams) (Medium, error)
 	CreateSpecies(ctx context.Context, arg CreateSpeciesParams) (Species, error)
 	CreateTrait(ctx context.Context, arg CreateTraitParams) (GeneticDictionary, error)
@@ -31,26 +33,36 @@ type Querier interface {
 	// identical across branches so sqlc generates a single row type.
 	DashboardRecentActivity(ctx context.Context) ([]DashboardRecentActivityRow, error)
 	DashboardStats(ctx context.Context) (DashboardStatsRow, error)
+	DeleteComponentsForListing(ctx context.Context, listingID int32) error
 	DeleteGecko(ctx context.Context, id int32) error
 	DeleteGenesForGecko(ctx context.Context, geckoID int32) error
+	DeleteListing(ctx context.Context, id int32) error
 	DeleteMedia(ctx context.Context, id int32) error
+	DetachGeckosForListing(ctx context.Context, listingID int32) error
 	GetAdminByEmail(ctx context.Context, lower string) (AdminUser, error)
 	GetAdminByID(ctx context.Context, id int32) (AdminUser, error)
 	GetAvailableGeckoByCode(ctx context.Context, code string) (GetAvailableGeckoByCodeRow, error)
 	GetCoverForGecko(ctx context.Context, geckoID pgtype.Int4) (Medium, error)
 	GetGeckoByCode(ctx context.Context, code string) (GetGeckoByCodeRow, error)
 	GetGeckoByID(ctx context.Context, id int32) (GetGeckoByIDRow, error)
+	GetListing(ctx context.Context, id int32) (Listing, error)
+	GetListingBySku(ctx context.Context, sku pgtype.Text) (int32, error)
 	GetMediaByID(ctx context.Context, id int32) (Medium, error)
 	GetSpeciesByCode(ctx context.Context, code SpeciesCode) (Species, error)
 	GetSpeciesByID(ctx context.Context, id int32) (Species, error)
 	GetTraitByNameAndSpecies(ctx context.Context, arg GetTraitByNameAndSpeciesParams) (GeneticDictionary, error)
 	ListAvailableGeckos(ctx context.Context) ([]ListAvailableGeckosRow, error)
+	ListComponentsForListing(ctx context.Context, listingID int32) ([]ListComponentsForListingRow, error)
 	// First photo per gecko (lowest display_order, then oldest) so the list
 	// view can render covers in a single round trip instead of N queries.
 	ListCoverMediaForGeckos(ctx context.Context) ([]ListCoverMediaForGeckosRow, error)
 	ListGeckoGenes(ctx context.Context) ([]ListGeckoGenesRow, error)
 	ListGeckos(ctx context.Context) ([]ListGeckosRow, error)
+	ListGeckosForListing(ctx context.Context, listingID int32) ([]ListGeckosForListingRow, error)
 	ListGenesForGecko(ctx context.Context, geckoID int32) ([]ListGenesForGeckoRow, error)
+	ListListings(ctx context.Context) ([]ListListingsRow, error)
+	// Used by admin gecko detail page.
+	ListListingsForGecko(ctx context.Context, geckoID int32) ([]ListListingsForGeckoRow, error)
 	ListMediaForGecko(ctx context.Context, geckoID pgtype.Int4) ([]Medium, error)
 	// Returns the media ids for a gecko in the same (display_order, uploaded_at)
 	// order the client sees. Used by set-cover to reassign display_order.
@@ -66,7 +78,12 @@ type Querier interface {
 	// $1 is the LIKE pattern, e.g. 'ZGLP-2026-%'. NULLIF guards against
 	// legacy codes that don't have a 3rd segment (SPLIT_PART returns '').
 	NextGeckoSequenceForSpeciesYear(ctx context.Context, code string) (int32, error)
+	SetListingComponent(ctx context.Context, arg SetListingComponentParams) error
 	UpdateGecko(ctx context.Context, arg UpdateGeckoParams) (Gecko, error)
+	// Status transitions into LISTED/SOLD/ARCHIVED auto-stamp the matching
+	// timestamp the first time it happens; existing stamps are preserved so
+	// the audit trail survives later status moves.
+	UpdateListing(ctx context.Context, arg UpdateListingParams) (Listing, error)
 	UpdateMediaCaption(ctx context.Context, arg UpdateMediaCaptionParams) (Medium, error)
 	UpdateMediaCaptionAndOrder(ctx context.Context, arg UpdateMediaCaptionAndOrderParams) (Medium, error)
 	UpdateMediaDisplayOrder(ctx context.Context, arg UpdateMediaDisplayOrderParams) (Medium, error)
