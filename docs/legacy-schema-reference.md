@@ -433,12 +433,47 @@ product_gecko
 └── created_at        timestamp DEFAULT NOW() NOT NULL
 ```
 
-**Verdict for entire products domain**: 🔴 **Skip for v1 and probably v2**. Reasons:
-- No sales yet. Pricing a gecko does not require a `products` row — it can live on `geckos.list_price` when we need it.
-- "Starter kit package composed of supplies" is a supplies-resale business, not a breeding business. The user said no to D (supplies) in the original scope.
-- The 4-table "polymorphic product" model adds complexity (joins everywhere to resolve a product detail view). Modern alternative: one `listings` table that optionally points at a gecko OR has a physical SKU.
+**Verdict (revised 2026-04-21):** 🟢 **Port when commerce arrives — Phase 6.5.** Not as the legacy 4-table polymorphic model (that's what the original verdict correctly rejected), but as a cleaner 2- or 3-table design:
 
-**Revisit trigger**: if user ever says "we're going to sell supplies alongside geckos" — then refine and port. Until then, ignore.
+```
+listings
+├── id              serial PK
+├── sku             varchar (nullable — for non-gecko items)
+├── type            enum('GECKO', 'PACKAGE', 'SUPPLY')
+├── title           varchar
+├── description     text
+├── price_usd       numeric (explicit — even packages store price directly so bundles can discount)
+├── deposit_usd     numeric (nullable)
+├── status          enum('DRAFT','LISTED','RESERVED','SOLD','ARCHIVED')
+├── cover_photo_url varchar (for SUPPLY/PACKAGE; GECKO listings pull from media)
+├── listed_at / sold_at / archived_at / created_at / updated_at
+
+listing_geckos              (junction for GECKO-type listings — supports pair/trio bundles)
+├── listing_id
+├── gecko_id
+└── PK (listing_id, gecko_id)
+
+listing_components          (junction for PACKAGE-type listings — flat bundling)
+├── listing_id              (the package)
+├── component_listing_id    (the contained supply/gecko listing)
+├── quantity                integer
+└── PK (listing_id, component_listing_id)
+```
+
+Gecko row stays pure biology — no `list_price_usd`. A gecko is for sale when a `LISTED` listing references it; a gecko on HOLD is a biology-status (long stay) independent of whether a listing is reserved.
+
+**Why this beats the legacy 4-table model:** 2 tables, not 4. One product type column, no polymorphic extension tables. Packages compose flat (no recursive package-in-package — YAGNI). Pricing lives on the listing, so bundle discounts and price-over-time both work naturally.
+
+**Why this beats `geckos.list_price_usd` (the naive path):** lets a gecko have different prices at different times (or none), supports pair bundles, decouples "for sale" from "alive/healthy." Clean separation: biology vs commerce.
+
+**What stays skipped:** the `product_supply → inventory_item` extension — not needed until Tier 2 (below). `product_components` recursion (package-inside-package) — flat bundling covers the basic/intermediate/premium starter kits the operator is planning.
+
+**Scope ladder:**
+- **Tier 1 (Phase 6.5 — port now or when commerce arrives):** `listings`, `listing_geckos`, `listing_components`. Data migration moves existing `geckos.list_price_usd` into listings and drops the column.
+- **Tier 2 (when supply stock is physically held):** add `stock_on_hand INTEGER DEFAULT 0` to listings + a tiny "adjust stock" UI. No separate inventory tables — single column suffices for Zen's scale.
+- **Tier 3 (if we ever import containers internationally):** revisit suppliers/POs/receipts/landed-cost. Unlikely for years; still 🔴 skip.
+
+**What the original verdict got right:** 4 polymorphic tables = pain. **What it got wrong:** conflated "the 4-table model is bad" with "no commerce layer at all." Zen's vision (gecko = biology, listing = commerce, supplies + packages as first-class commerce objects) is architecturally sound and cheap to implement once as described above.
 
 ---
 
@@ -579,7 +614,7 @@ Port all of these when porting the underlying table.
 ## 16. Patterns to AVOID from the legacy
 
 ### 16.1 Three tables for "a product subtype"
-`products + product_supply + product_gecko + product_components` = 4 joins to render a listing page. Prefer: one `listings` table with a discriminator column + nullable references, OR just separate `supply_products` / `gecko_listings` tables. Don't inherit the polymorphic-product design without a strong reason.
+`products + product_supply + product_gecko + product_components` = 4 joins to render a listing page. The replacement design (see §10 verdict) is one `listings` table with a `type` discriminator + two junction tables (`listing_geckos` and `listing_components`). 3 tables, not 4, with no polymorphic extension tables.
 
 ### 16.2 `users` table with a PUBLIC role
 The legacy `users.role` enum has `ADMIN / STAFF / PUBLIC`. But PUBLIC users never logged in — the value was aspirational. The new `admin_users` table doesn't make that mistake.
@@ -596,16 +631,18 @@ The legacy `users.role` enum has `ADMIN / STAFF / PUBLIC`. But PUBLIC users neve
 
 | Phase | Legacy tables to port | Rationale |
 |---|---|---|
-| **2 — Waitlist** (done / in progress) | None | `waitlist_entries` is already a new table. |
-| **3 — Geckos CRUD + photos + genetics** | `species`, `genetic_dictionary`, `geckos`, `gecko_genes`, `media` | Core of admin v1. Port these 5. |
-| **4 — Data visualizer** | None | Reads existing tables via schema introspection (already built). |
-| **5 — Dashboard stats** | None | Aggregate queries on tables from Phase 3. |
-| **6 — Storefront + i18n polish** | `translations` (optional) | Only if multilingual traits are wanted on the storefront. Skip otherwise. |
+| **2 — Waitlist** (done) | None | `waitlist_entries` is already a new table. |
+| **3 — Geckos CRUD + photos + genetics** (done) | `species`, `genetic_dictionary`, `geckos`, `gecko_genes`, `media` | Core of admin v1. |
+| **4 — Data visualizer** (done) | None | Reads existing tables via schema introspection. |
+| **5 — Dashboard stats** (done) | None | Aggregate queries on tables from Phase 3. |
+| **6 — Storefront MVP** (done) | None | No new tables — reuses `geckos`, `waitlist_entries`. |
+| **6.5 — Commerce model** | Replace `geckos.list_price_usd` with new `listings`, `listing_geckos`, `listing_components` tables (Tier 1 of §10 verdict). | Separates biology from commerce. Supports supplies + starter-kit packages as first-class listings. Triggered by operator planning to sell supplies alongside geckos. |
 | **7 — Husbandry quick-log** | `feedings`, `weights` | When daily logging becomes habitual. |
-| **8 — Breeding season 1** | `pairings`, `clutches`, `incubators`, `eggs` | When operator sets up first pair. |
-| **Never (probably)** | `users`, `products`, `product_*`, `inventory_*`, `suppliers`, `purchase_*`, `receipts*`, `shipments*`, `pricing_rules` | Supplies/sales business the operator isn't running. |
+| **8 — Breeding season 1** | `pairings`, `clutches`, `incubators`, `eggs` | When operator sets up first pair. Also re-enables `media.pairing_id` and `geckos.clutch_id`. |
+| **i18n (optional — can slot into 6.5 or later)** | `translations` | When multilingual trait names / storefront copy are wanted. |
+| **Never (probably)** | Legacy `users` (superseded), `products`+extension tables (replaced by new `listings`), `inventory_*` beyond a simple stock column, `suppliers`, `purchase_orders`, `purchase_order_items`, `receipts`, `receipt_items`, `receipt_item_costs`, `shipments`, `shipment_costs`, `pricing_rules` | Container-import and supplies-resale infrastructure the operator isn't building. |
 
-**Total worth porting**: ~11 of 28 tables. The rest is archaeological interest.
+**Total worth porting**: ~13 tables (11 legacy + 2 new listings junctions). The rest is archaeological interest.
 
 ---
 
