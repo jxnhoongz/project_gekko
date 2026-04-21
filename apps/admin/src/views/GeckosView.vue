@@ -3,58 +3,74 @@ import { computed, ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge, type BadgeVariants } from '@/components/ui/badge';
-import { Plus, Search, Filter } from 'lucide-vue-next';
+import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Plus, Search, Filter, AlertTriangle } from 'lucide-vue-next';
 import PageHeader from '@/components/layout/PageHeader.vue';
 import EmptyState from '@/components/layout/EmptyState.vue';
 import GeckoCard from '@/components/GeckoCard.vue';
-import { geckos } from '@/mock';
-import type { GeckoStatus, Species } from '@/types';
+import { useGeckos } from '@/composables/useGeckos';
+import type { GeckoStatus } from '@/types/gecko';
+import { STATUS_LABEL } from '@/types/gecko';
+
+const { data, isLoading, isError, error, refetch } = useGeckos();
 
 const search = ref('');
-const statusFilter = ref<GeckoStatus | 'All'>('All');
-const speciesFilter = ref<Species | 'All'>('All');
+const statusFilter = ref<GeckoStatus | 'ALL'>('ALL');
+const speciesFilter = ref<string>('ALL'); // 'ALL' | species_code ('LP'/'CR'/'AF')
 
-const statuses: (GeckoStatus | 'All')[] = ['All', 'Breeding', 'Available', 'Hold', 'Personal', 'Sold'];
-const speciesList: (Species | 'All')[] = ['All', 'Leopard Gecko', 'Crested Gecko', 'African Fat-Tail'];
+const statuses: (GeckoStatus | 'ALL')[] = [
+  'ALL', 'BREEDING', 'AVAILABLE', 'HOLD', 'PERSONAL', 'SOLD',
+];
+const speciesList = [
+  { code: 'ALL', label: 'All' },
+  { code: 'LP',  label: 'Leopard' },
+  { code: 'CR',  label: 'Crested' },
+  { code: 'AF',  label: 'Fat-tail' },
+];
 
-const statusBadge: Record<GeckoStatus | 'All', BadgeVariants['variant']> = {
-  All:       'outline',
-  Breeding:  'soft',
-  Available: 'success',
-  Hold:      'warn',
-  Personal:  'muted',
-  Sold:      'outline',
+const statusBadge: Record<GeckoStatus | 'ALL', BadgeVariants['variant']> = {
+  ALL:       'outline',
+  BREEDING:  'soft',
+  AVAILABLE: 'success',
+  HOLD:      'warn',
+  PERSONAL:  'muted',
+  SOLD:      'outline',
+  DECEASED:  'outline',
 };
 
 const filtered = computed(() => {
+  const geckos = data.value?.geckos ?? [];
   const q = search.value.trim().toLowerCase();
   return geckos.filter((g) => {
-    if (statusFilter.value !== 'All' && g.status !== statusFilter.value) return false;
-    if (speciesFilter.value !== 'All' && g.species !== speciesFilter.value) return false;
+    if (statusFilter.value !== 'ALL' && g.status !== statusFilter.value) return false;
+    if (speciesFilter.value !== 'ALL' && g.species_code !== speciesFilter.value) return false;
     if (!q) return true;
+    const morphStr = g.traits.map((t) => t.trait_name).join(' ').toLowerCase();
     return (
-      g.name.toLowerCase().includes(q) ||
+      g.name?.toLowerCase().includes(q) ||
       g.code.toLowerCase().includes(q) ||
-      g.morph.toLowerCase().includes(q) ||
-      g.species.toLowerCase().includes(q)
+      g.species_name.toLowerCase().includes(q) ||
+      morphStr.includes(q)
     );
   });
 });
 
 function clearFilters() {
   search.value = '';
-  statusFilter.value = 'All';
-  speciesFilter.value = 'All';
+  statusFilter.value = 'ALL';
+  speciesFilter.value = 'ALL';
+}
+
+function statusLabel(s: GeckoStatus | 'ALL') {
+  if (s === 'ALL') return 'All';
+  return STATUS_LABEL[s];
 }
 </script>
 
 <template>
   <div class="flex flex-col gap-8">
-    <PageHeader
-      eyebrow="Collection"
-      title="Geckos"
-      subtitle="Everyone currently in the rack."
-    >
+    <PageHeader eyebrow="Collection" title="Geckos" subtitle="Everyone currently in the rack.">
       <template #actions>
         <Button variant="default" size="sm">
           <Plus class="size-4" />
@@ -71,11 +87,7 @@ function clearFilters() {
         <Search
           class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-brand-dark-500 pointer-events-none"
         />
-        <Input
-          v-model="search"
-          placeholder="Search name, code, morph…"
-          class="pl-9 bg-white"
-        />
+        <Input v-model="search" placeholder="Search name, code, morph…" class="pl-9 bg-white" />
       </div>
       <div class="flex flex-col sm:flex-row gap-3 lg:items-center">
         <div class="flex flex-wrap items-center gap-1.5">
@@ -97,7 +109,7 @@ function clearFilters() {
                   : 'hover:bg-brand-cream-100 cursor-pointer'
               "
             >
-              {{ s }}
+              {{ statusLabel(s) }}
             </Badge>
           </button>
         </div>
@@ -105,38 +117,69 @@ function clearFilters() {
           <span class="text-xs text-brand-dark-600 mr-1">Species</span>
           <button
             v-for="sp in speciesList"
-            :key="sp"
+            :key="sp.code"
             type="button"
             class="focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full"
-            @click="speciesFilter = sp"
+            @click="speciesFilter = sp.code"
           >
             <Badge
-              :variant="speciesFilter === sp ? 'default' : 'outline'"
+              :variant="speciesFilter === sp.code ? 'default' : 'outline'"
               :class="
-                speciesFilter === sp
+                speciesFilter === sp.code
                   ? ''
                   : 'hover:bg-brand-cream-100 cursor-pointer'
               "
             >
-              {{ sp }}
+              {{ sp.label }}
             </Badge>
           </button>
         </div>
       </div>
     </div>
 
+    <!-- Error -->
+    <Card
+      v-if="isError"
+      class="border-red-200 bg-red-50 p-4 flex items-start gap-3 !gap-3"
+    >
+      <AlertTriangle class="size-5 text-red-700 shrink-0 mt-0.5" />
+      <div class="flex-1 min-w-0">
+        <div class="text-sm font-semibold text-red-900">Couldn't load geckos.</div>
+        <div class="text-xs text-red-800 break-all">{{ (error as Error)?.message }}</div>
+      </div>
+      <Button variant="outline" size="sm" @click="refetch()">Retry</Button>
+    </Card>
+
+    <!-- Loading -->
+    <div
+      v-else-if="isLoading"
+      class="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+    >
+      <Skeleton v-for="n in 6" :key="n" class="h-72 rounded-xl" />
+    </div>
+
     <!-- Grid -->
     <div
-      v-if="filtered.length"
+      v-else-if="filtered.length"
       class="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3"
     >
       <GeckoCard v-for="g in filtered" :key="g.id" :gecko="g" />
     </div>
 
     <EmptyState
+      v-else-if="(data?.geckos?.length ?? 0) === 0"
+      title="No geckos yet."
+      description="Your collection is empty. Add your first gecko when you're ready."
+    >
+      <template #actions>
+        <Button variant="default" size="sm"><Plus class="size-4" /> Add gecko</Button>
+      </template>
+    </EmptyState>
+
+    <EmptyState
       v-else
       title="No geckos match that filter."
-      description="Try clearing your filters — or add the first gecko to this view."
+      description="Try clearing your filters to see the full rack."
     >
       <template #actions>
         <Button variant="outline" size="sm" @click="clearFilters">Clear filters</Button>

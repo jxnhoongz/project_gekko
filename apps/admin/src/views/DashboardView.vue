@@ -20,18 +20,24 @@ import { Separator } from '@/components/ui/separator';
 import PageHeader from '@/components/layout/PageHeader.vue';
 import StatCard from '@/components/layout/StatCard.vue';
 import { useAuthStore } from '@/stores/auth';
-import { geckos, upcoming, activity } from '@/mock';
+import { useGeckos } from '@/composables/useGeckos';
+import { upcoming, activity } from '@/mock';
 import type { ActivityKind, UpcomingKind } from '@/types';
 import { timeAgo } from '@/lib/format';
 
 const auth = useAuthStore();
 const router = useRouter();
 
-const stats = computed(() => ({
-  total: geckos.length,
-  breeding: geckos.filter((g) => g.status === 'Breeding').length,
-  available: geckos.filter((g) => g.status === 'Available').length,
-}));
+const { data: geckosData } = useGeckos();
+
+const stats = computed(() => {
+  const g = geckosData.value?.geckos ?? [];
+  return {
+    total: g.length,
+    breeding: g.filter((x) => x.status === 'BREEDING').length,
+    available: g.filter((x) => x.status === 'AVAILABLE').length,
+  };
+});
 
 const greetingName = computed(
   () => auth.admin?.name?.split(' ')[0] || auth.admin?.email?.split('@')[0] || 'there',

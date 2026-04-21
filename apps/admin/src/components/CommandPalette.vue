@@ -17,7 +17,7 @@ import {
   Settings,
   Search,
 } from 'lucide-vue-next';
-import { geckos } from '@/mock';
+import { useGeckos } from '@/composables/useGeckos';
 import { api } from '@/lib/api';
 import type { SchemaResponse, DbTable } from '@/types/schema';
 
@@ -37,6 +37,9 @@ const highlighted = ref(0);
 const inputRef = ref<HTMLInputElement | null>(null);
 const tables = ref<DbTable[]>([]);
 let loadedTables = false;
+
+const { data: geckosData } = useGeckos();
+const geckos = computed(() => geckosData.value?.geckos ?? []);
 
 async function loadTables() {
   if (loadedTables) return;
@@ -86,11 +89,12 @@ const baseItems = computed<Item[]>(() => {
     });
   }
 
-  for (const g of geckos) {
+  for (const g of geckos.value) {
+    const morph = g.traits.map((t) => t.trait_name).join(' ') || 'Normal';
     out.push({
       key: `gecko:${g.id}`,
-      label: g.name,
-      hint: `${g.code} · ${g.species} · ${g.morph}`,
+      label: g.name || g.code,
+      hint: `${g.code} · ${g.species_name} · ${morph}`,
       group: 'Geckos',
       icon: Turtle,
       go: () => router.push({ name: 'gecko-detail', params: { id: g.id } }),

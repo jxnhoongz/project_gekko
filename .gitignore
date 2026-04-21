@@ -26,6 +26,7 @@ build/
 backend/tmp/
 backend/gekko
 backend/gekko-seed
+backend/gekko-seed-demo
 backend/uploads/*
 !backend/uploads/.gitkeep
 
