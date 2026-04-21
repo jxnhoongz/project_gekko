@@ -49,6 +49,7 @@ func MountMedia(r chi.Router, pool *pgxpool.Pool, signer *auth.JWTSigner, cfg *c
 		pr.Use(RequireAuth(signer))
 		pr.Post("/api/geckos/{id}/media", d.upload)
 		pr.Patch("/api/media/{id}", d.patch)
+		pr.Post("/api/media/{id}/set-cover", d.setCover)
 		pr.Delete("/api/media/{id}", d.delete)
 	})
 }
@@ -266,6 +267,73 @@ func (d *mediaDeps) patch(w http.ResponseWriter, r *http.Request) {
 		Caption:      textOrEmpty(row.Caption),
 		DisplayOrder: row.DisplayOrder,
 	})
+}
+
+func (d *mediaDeps) setCover(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	targetID64, err := strconv.Atoi(idStr)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid id"})
+		return
+	}
+	targetID := int32(targetID64)
+
+	ctx := r.Context()
+	target, err := d.q.GetMediaByID(ctx, targetID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "lookup failed"})
+		return
+	}
+	if !target.GeckoID.Valid {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "media is not attached to a gecko"})
+		return
+	}
+
+	tx, err := d.pool.Begin(ctx)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "begin failed"})
+		return
+	}
+	defer tx.Rollback(ctx)
+	qtx := d.q.WithTx(tx)
+
+	ids, err := qtx.ListMediaIDsForGeckoOrdered(ctx, target.GeckoID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "list failed: " + err.Error()})
+		return
+	}
+
+	// Build the desired sequence: target first, then everyone else in their
+	// existing order.
+	desired := make([]int32, 0, len(ids))
+	desired = append(desired, targetID)
+	for _, id := range ids {
+		if id == targetID {
+			continue
+		}
+		desired = append(desired, id)
+	}
+
+	for i, id := range desired {
+		if _, err := qtx.UpdateMediaDisplayOrder(ctx, db.UpdateMediaDisplayOrderParams{
+			ID:           id,
+			DisplayOrder: int32(i),
+		}); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "reorder failed: " + err.Error()})
+			return
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "commit failed"})
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func randomFilename(ext string) (string, error) {
