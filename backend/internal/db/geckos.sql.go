@@ -113,6 +113,24 @@ func (q *Queries) CreateGecko(ctx context.Context, arg CreateGeckoParams) (Gecko
 	return i, err
 }
 
+const deleteGecko = `-- name: DeleteGecko :exec
+DELETE FROM geckos WHERE id = $1
+`
+
+func (q *Queries) DeleteGecko(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, deleteGecko, id)
+	return err
+}
+
+const deleteGenesForGecko = `-- name: DeleteGenesForGecko :exec
+DELETE FROM gecko_genes WHERE gecko_id = $1
+`
+
+func (q *Queries) DeleteGenesForGecko(ctx context.Context, geckoID int32) error {
+	_, err := q.db.Exec(ctx, deleteGenesForGecko, geckoID)
+	return err
+}
+
 const getGeckoByCode = `-- name: GetGeckoByCode :one
 SELECT
   g.id, g.code, g.name, g.species_id, g.sex, g.hatch_date, g.acquired_date,
@@ -291,4 +309,90 @@ func (q *Queries) ListGeckos(ctx context.Context) ([]ListGeckosRow, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const nextGeckoSequenceForSpeciesYear = `-- name: NextGeckoSequenceForSpeciesYear :one
+SELECT COALESCE(
+  MAX(NULLIF(SPLIT_PART(code, '-', 3), '')::integer),
+  0
+) + 1 AS next_num
+FROM geckos
+WHERE code LIKE $1
+`
+
+// $1 is the LIKE pattern, e.g. 'ZGLP-2026-%'. NULLIF guards against
+// legacy codes that don't have a 3rd segment (SPLIT_PART returns ”).
+func (q *Queries) NextGeckoSequenceForSpeciesYear(ctx context.Context, code string) (int32, error) {
+	row := q.db.QueryRow(ctx, nextGeckoSequenceForSpeciesYear, code)
+	var next_num int32
+	err := row.Scan(&next_num)
+	return next_num, err
+}
+
+const updateGecko = `-- name: UpdateGecko :one
+UPDATE geckos SET
+  name           = $2,
+  species_id     = $3,
+  sex            = $4,
+  hatch_date     = $5,
+  acquired_date  = $6,
+  status         = $7,
+  sire_id        = $8,
+  dam_id         = $9,
+  list_price_usd = $10,
+  notes          = $11,
+  updated_at     = NOW()
+WHERE id = $1
+RETURNING
+  id, code, name, species_id, sex, hatch_date, acquired_date,
+  status, sire_id, dam_id, list_price_usd, notes,
+  created_at, updated_at
+`
+
+type UpdateGeckoParams struct {
+	ID           int32          `json:"id"`
+	Name         pgtype.Text    `json:"name"`
+	SpeciesID    int32          `json:"species_id"`
+	Sex          Sex            `json:"sex"`
+	HatchDate    pgtype.Date    `json:"hatch_date"`
+	AcquiredDate pgtype.Date    `json:"acquired_date"`
+	Status       GeckoStatus    `json:"status"`
+	SireID       pgtype.Int4    `json:"sire_id"`
+	DamID        pgtype.Int4    `json:"dam_id"`
+	ListPriceUsd pgtype.Numeric `json:"list_price_usd"`
+	Notes        pgtype.Text    `json:"notes"`
+}
+
+func (q *Queries) UpdateGecko(ctx context.Context, arg UpdateGeckoParams) (Gecko, error) {
+	row := q.db.QueryRow(ctx, updateGecko,
+		arg.ID,
+		arg.Name,
+		arg.SpeciesID,
+		arg.Sex,
+		arg.HatchDate,
+		arg.AcquiredDate,
+		arg.Status,
+		arg.SireID,
+		arg.DamID,
+		arg.ListPriceUsd,
+		arg.Notes,
+	)
+	var i Gecko
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.Name,
+		&i.SpeciesID,
+		&i.Sex,
+		&i.HatchDate,
+		&i.AcquiredDate,
+		&i.Status,
+		&i.SireID,
+		&i.DamID,
+		&i.ListPriceUsd,
+		&i.Notes,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

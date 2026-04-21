@@ -85,38 +85,38 @@ var seedTraits = []traitSeed{
 
 var seedGeckos = []geckoSeed{
 	{
-		code: "ZG-001", name: "Apsara", species: db.SpeciesCodeLP, sex: db.SexF,
+		code: "ZGLP-2026-001", name: "Apsara", species: db.SpeciesCodeLP, sex: db.SexF,
 		hatchDate: "2023-06-12", status: db.GeckoStatusBREEDING,
 		notes: "Proven breeder, calm temperament.",
 		traits: []traitRef{{"Tangerine", db.ZygosityHOM}},
 	},
 	{
-		code: "ZG-002", name: "Rithy", species: db.SpeciesCodeLP, sex: db.SexM,
+		code: "ZGLP-2026-002", name: "Rithy", species: db.SpeciesCodeLP, sex: db.SexM,
 		hatchDate: "2022-09-03", status: db.GeckoStatusBREEDING,
 		notes: "Holdback from 2022 clutch.",
 		traits: []traitRef{{"Mack Snow", db.ZygosityHET}, {"Tremper Albino", db.ZygosityHET}},
 	},
 	{
-		code: "ZG-003", name: "Chandra", species: db.SpeciesCodeCR, sex: db.SexF,
+		code: "ZGCR-2026-001", name: "Chandra", species: db.SpeciesCodeCR, sex: db.SexF,
 		hatchDate: "2024-01-20", status: db.GeckoStatusPERSONAL,
 		notes: "Pet, not for sale.",
 		traits: []traitRef{{"Harlequin", db.ZygosityHOM}},
 	},
 	{
-		code: "ZG-004", name: "Suri", species: db.SpeciesCodeCR, sex: db.SexF,
+		code: "ZGCR-2026-002", name: "Suri", species: db.SpeciesCodeCR, sex: db.SexF,
 		hatchDate: "2024-03-08", status: db.GeckoStatusAVAILABLE,
 		priceUsd: "180.00",
 		notes:    "High-spot dalmatian, good eater.",
 		traits:   []traitRef{{"Dalmatian", db.ZygosityHOM}},
 	},
 	{
-		code: "ZG-005", name: "Khmer", species: db.SpeciesCodeAF, sex: db.SexM,
+		code: "ZGAF-2026-001", name: "Khmer", species: db.SpeciesCodeAF, sex: db.SexM,
 		hatchDate: "2023-11-11", status: db.GeckoStatusBREEDING,
 		notes:  "Imported line, strong oreo pattern.",
 		traits: []traitRef{{"Oreo", db.ZygosityHOM}},
 	},
 	{
-		code: "ZG-006", name: "Veasna", species: db.SpeciesCodeLP, sex: db.SexF,
+		code: "ZGLP-2026-003", name: "Veasna", species: db.SpeciesCodeLP, sex: db.SexF,
 		hatchDate: "2024-05-22", status: db.GeckoStatusHOLD,
 		priceUsd: "220.00",
 		notes:    "On hold for Dara until May 5.",

@@ -51,3 +51,38 @@ RETURNING
   id, code, name, species_id, sex, hatch_date, acquired_date,
   status, sire_id, dam_id, list_price_usd, notes,
   created_at, updated_at;
+
+-- name: UpdateGecko :one
+UPDATE geckos SET
+  name           = $2,
+  species_id     = $3,
+  sex            = $4,
+  hatch_date     = $5,
+  acquired_date  = $6,
+  status         = $7,
+  sire_id        = $8,
+  dam_id         = $9,
+  list_price_usd = $10,
+  notes          = $11,
+  updated_at     = NOW()
+WHERE id = $1
+RETURNING
+  id, code, name, species_id, sex, hatch_date, acquired_date,
+  status, sire_id, dam_id, list_price_usd, notes,
+  created_at, updated_at;
+
+-- name: DeleteGecko :exec
+DELETE FROM geckos WHERE id = $1;
+
+-- name: NextGeckoSequenceForSpeciesYear :one
+-- $1 is the LIKE pattern, e.g. 'ZGLP-2026-%'. NULLIF guards against
+-- legacy codes that don't have a 3rd segment (SPLIT_PART returns '').
+SELECT COALESCE(
+  MAX(NULLIF(SPLIT_PART(code, '-', 3), '')::integer),
+  0
+) + 1 AS next_num
+FROM geckos
+WHERE code LIKE $1;
+
+-- name: DeleteGenesForGecko :exec
+DELETE FROM gecko_genes WHERE gecko_id = $1;

@@ -22,6 +22,8 @@ type Querier interface {
 	CreateSpecies(ctx context.Context, arg CreateSpeciesParams) (Species, error)
 	CreateTrait(ctx context.Context, arg CreateTraitParams) (GeneticDictionary, error)
 	CreateWaitlistEntry(ctx context.Context, arg CreateWaitlistEntryParams) (WaitlistEntry, error)
+	DeleteGecko(ctx context.Context, id int32) error
+	DeleteGenesForGecko(ctx context.Context, geckoID int32) error
 	GetAdminByEmail(ctx context.Context, lower string) (AdminUser, error)
 	GetAdminByID(ctx context.Context, id int32) (AdminUser, error)
 	GetCoverForGecko(ctx context.Context, geckoID pgtype.Int4) (Medium, error)
@@ -38,6 +40,10 @@ type Querier interface {
 	ListTraits(ctx context.Context) ([]GeneticDictionary, error)
 	ListTraitsBySpecies(ctx context.Context, speciesID int32) ([]GeneticDictionary, error)
 	ListWaitlistEntries(ctx context.Context, arg ListWaitlistEntriesParams) ([]WaitlistEntry, error)
+	// $1 is the LIKE pattern, e.g. 'ZGLP-2026-%'. NULLIF guards against
+	// legacy codes that don't have a 3rd segment (SPLIT_PART returns '').
+	NextGeckoSequenceForSpeciesYear(ctx context.Context, code string) (int32, error)
+	UpdateGecko(ctx context.Context, arg UpdateGeckoParams) (Gecko, error)
 }
 
 var _ Querier = (*Queries)(nil)
