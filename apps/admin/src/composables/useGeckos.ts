@@ -104,3 +104,38 @@ export function useDeleteGecko() {
     onSuccess: (id) => invalidateGeckos(qc, id),
   });
 }
+
+export function useUploadGeckoMedia() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      geckoId,
+      file,
+      caption,
+    }: {
+      geckoId: number;
+      file: File;
+      caption?: string;
+    }) => {
+      const form = new FormData();
+      form.append('file', file);
+      if (caption) form.append('caption', caption);
+      const { data } = await api.post(`/api/geckos/${geckoId}/media`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return { geckoId, media: data };
+    },
+    onSuccess: ({ geckoId }) => invalidateGeckos(qc, geckoId),
+  });
+}
+
+export function useDeleteMedia() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ mediaId, geckoId }: { mediaId: number; geckoId: number }) => {
+      await api.delete(`/api/media/${mediaId}`);
+      return geckoId;
+    },
+    onSuccess: (geckoId) => invalidateGeckos(qc, geckoId),
+  });
+}

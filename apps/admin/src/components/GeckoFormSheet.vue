@@ -13,12 +13,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { X, Plus, Trash2, Info } from 'lucide-vue-next';
+import { X, Plus, Trash2, Info, Upload, ImageOff } from 'lucide-vue-next';
 import {
   useSpecies,
   useTraits,
   useCreateGecko,
   useUpdateGecko,
+  useUploadGeckoMedia,
+  useDeleteMedia,
   type GeckoWritePayload,
 } from '@/composables/useGeckos';
 import type { Gecko, Zygosity, Sex, GeckoStatus } from '@/types/gecko';
@@ -118,7 +120,67 @@ function removeTrait(idx: number) {
 
 const createMut = useCreateGecko();
 const updateMut = useUpdateGecko();
+const uploadMut = useUploadGeckoMedia();
+const deleteMediaMut = useDeleteMedia();
 const saving = computed(() => createMut.isPending.value || updateMut.isPending.value);
+
+// Local photos state starts from the gecko's photos when the sheet opens
+// and is updated on upload/delete so the sheet reflects changes immediately.
+const photos = ref<{ id: number; url: string; caption: string; display_order: number }[]>([]);
+const fileInput = ref<HTMLInputElement | null>(null);
+
+watch(open, (v) => {
+  if (v && props.gecko) {
+    photos.value = (props.gecko.photos ?? []).map((p) => ({
+      id: p.id,
+      url: p.url,
+      caption: p.caption,
+      display_order: p.display_order,
+    }));
+  }
+});
+
+async function onFilesPicked(e: Event) {
+  if (!props.gecko) return;
+  const input = e.target as HTMLInputElement;
+  const files = Array.from(input.files ?? []);
+  if (!files.length) return;
+  input.value = '';
+
+  for (const f of files) {
+    if (!f.type.startsWith('image/')) {
+      toast.error(`${f.name}: not an image`);
+      continue;
+    }
+    if (f.size > 10 * 1024 * 1024) {
+      toast.error(`${f.name}: larger than 10 MB`);
+      continue;
+    }
+    try {
+      const { media } = await uploadMut.mutateAsync({ geckoId: props.gecko.id, file: f });
+      photos.value.push({
+        id: media.id,
+        url: media.url,
+        caption: media.caption,
+        display_order: media.display_order,
+      });
+    } catch (e: unknown) {
+      const msg = (e as any)?.response?.data?.error ?? (e as Error).message ?? 'Upload failed';
+      toast.error(`${f.name}: ${msg}`);
+    }
+  }
+}
+
+async function removePhoto(mediaId: number) {
+  if (!props.gecko) return;
+  if (!window.confirm('Delete this photo?')) return;
+  try {
+    await deleteMediaMut.mutateAsync({ mediaId, geckoId: props.gecko.id });
+    photos.value = photos.value.filter((p) => p.id !== mediaId);
+  } catch (e: unknown) {
+    toast.error((e as Error).message ?? 'Delete failed');
+  }
+}
 
 async function submit() {
   if (!speciesId.value) {
@@ -366,6 +428,70 @@ const zygosities: Zygosity[] = ['HOM', 'HET', 'POSS_HET'];
               >
                 {{ traitById.get(t.trait_id)?.trait_name ?? t.trait_id }} ({{ t.zygosity }})
               </Badge>
+            </div>
+          </div>
+
+          <Separator />
+
+          <!-- Photos (edit mode only — gecko must exist to attach media) -->
+          <div class="flex flex-col gap-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="font-serif text-lg">Photos</h3>
+                <p v-if="isEdit" class="text-xs text-brand-dark-600">
+                  JPG, PNG, WebP or GIF · up to 10 MB each · stored on the server.
+                </p>
+                <p v-else class="text-xs text-brand-dark-600 flex items-center gap-1">
+                  <Info class="size-3" /> Save the gecko first, then edit to add photos.
+                </p>
+              </div>
+              <template v-if="isEdit">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  :disabled="uploadMut.isPending.value"
+                  @click="fileInput?.click()"
+                >
+                  <Upload class="size-4" />
+                  {{ uploadMut.isPending.value ? 'Uploading…' : 'Upload' }}
+                </Button>
+                <input
+                  ref="fileInput"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  class="hidden"
+                  @change="onFilesPicked"
+                />
+              </template>
+            </div>
+
+            <div v-if="isEdit && photos.length" class="grid grid-cols-3 gap-2">
+              <div
+                v-for="p in photos"
+                :key="p.id"
+                class="relative group aspect-square rounded-lg overflow-hidden border border-brand-cream-300 bg-white"
+              >
+                <img :src="p.url" :alt="p.caption || 'gecko photo'" class="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  class="absolute top-1 right-1 size-6 rounded-md bg-brand-dark-950/70 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-600"
+                  aria-label="Delete photo"
+                  :disabled="deleteMediaMut.isPending.value"
+                  @click="removePhoto(p.id)"
+                >
+                  <Trash2 class="size-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <div
+              v-else-if="isEdit"
+              class="rounded-lg border border-dashed border-brand-cream-400 bg-brand-cream-50 p-8 text-center text-sm text-brand-dark-500 flex flex-col items-center gap-2"
+            >
+              <ImageOff class="size-6" />
+              No photos yet. Click Upload to add some.
             </div>
           </div>
         </div>
