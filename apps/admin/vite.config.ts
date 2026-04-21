@@ -13,6 +13,8 @@ export default defineConfig({
   server: {
     port: 5173,
     host: '0.0.0.0',
+    // Allow any *.ts.net hostname (Tailscale MagicDNS) plus local network
+    allowedHosts: ['.ts.net', 'gekko-dev', 'localhost'],
     proxy: {
       '/api':     { target: BACKEND, changeOrigin: true },
       '/uploads': { target: BACKEND, changeOrigin: true },
