@@ -6,8 +6,8 @@
 
 **In scope**
 
-- Backend: `PATCH /api/admin/media/{id}` accepting `{caption?, display_order?}` (generic media update).
-- Backend: `POST /api/admin/media/{id}/set-cover` — atomic re-sequence so the chosen photo becomes `display_order = 0` and all other photos for that gecko shift down by one (relative order preserved).
+- Backend: `PATCH /api/media/{id}` accepting `{caption?, display_order?}` (generic media update).
+- Backend: `POST /api/media/{id}/set-cover` — atomic re-sequence so the chosen photo becomes `display_order = 0` and all other photos for that gecko shift down by one (relative order preserved).
 - Frontend: `GeckoPicker.vue` — a searchable combobox used for the sire and dam slots inside `GeckoFormSheet.vue`. Filters by species + sex + excludes self.
 - Frontend: sire + dam inputs wired into the edit drawer (create-mode included); payload already supports `sire_id` and `dam_id`.
 - Frontend: hover-only ⭐ button on each photo tile in the edit drawer that calls `set-cover`.
@@ -29,7 +29,7 @@ Two new backend endpoints, three frontend changes. Existing `media` table + `Gec
 
 Both behind `RequireAuth`.
 
-#### `PATCH /api/admin/media/{id}`
+#### `PATCH /api/media/{id}`
 
 **Request body:**
 ```json
@@ -50,7 +50,7 @@ Both fields optional — only the provided fields are updated. If neither is pro
 
 **Status codes:** 200 on success, 400 on bad input, 404 if the media id doesn't exist, 500 on DB error.
 
-#### `POST /api/admin/media/{id}/set-cover`
+#### `POST /api/media/{id}/set-cover`
 
 **Request body:** empty (id in path is sufficient).
 
@@ -156,7 +156,7 @@ export function useUpdateMedia() {
       geckoId: number;
       patch: { caption?: string; display_order?: number };
     }) => {
-      const { data } = await api.patch(`/api/admin/media/${mediaId}`, patch);
+      const { data } = await api.patch(`/api/media/${mediaId}`, patch);
       return { geckoId, media: data };
     },
     onSuccess: ({ geckoId }) => invalidateGeckos(qc, geckoId),
@@ -167,7 +167,7 @@ export function useSetCoverMedia() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ mediaId, geckoId }: { mediaId: number; geckoId: number }) => {
-      await api.post(`/api/admin/media/${mediaId}/set-cover`);
+      await api.post(`/api/media/${mediaId}/set-cover`);
       return geckoId;
     },
     onSuccess: (geckoId) => invalidateGeckos(qc, geckoId),
