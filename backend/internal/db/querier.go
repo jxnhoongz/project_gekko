@@ -36,6 +36,7 @@ type Querier interface {
 	DeleteMedia(ctx context.Context, id int32) error
 	GetAdminByEmail(ctx context.Context, lower string) (AdminUser, error)
 	GetAdminByID(ctx context.Context, id int32) (AdminUser, error)
+	GetAvailableGeckoByCode(ctx context.Context, code string) (GetAvailableGeckoByCodeRow, error)
 	GetCoverForGecko(ctx context.Context, geckoID pgtype.Int4) (Medium, error)
 	GetGeckoByCode(ctx context.Context, code string) (GetGeckoByCodeRow, error)
 	GetGeckoByID(ctx context.Context, id int32) (GetGeckoByIDRow, error)
@@ -43,6 +44,7 @@ type Querier interface {
 	GetSpeciesByCode(ctx context.Context, code SpeciesCode) (Species, error)
 	GetSpeciesByID(ctx context.Context, id int32) (Species, error)
 	GetTraitByNameAndSpecies(ctx context.Context, arg GetTraitByNameAndSpeciesParams) (GeneticDictionary, error)
+	ListAvailableGeckos(ctx context.Context) ([]ListAvailableGeckosRow, error)
 	// First photo per gecko (lowest display_order, then oldest) so the list
 	// view can render covers in a single round trip instead of N queries.
 	ListCoverMediaForGeckos(ctx context.Context) ([]ListCoverMediaForGeckosRow, error)
@@ -53,6 +55,10 @@ type Querier interface {
 	// Returns the media ids for a gecko in the same (display_order, uploaded_at)
 	// order the client sees. Used by set-cover to reassign display_order.
 	ListMediaIDsForGeckoOrdered(ctx context.Context, geckoID pgtype.Int4) ([]int32, error)
+	// Used to compose morphs for the list endpoint in one round trip.
+	ListPublicGenesByGeckoIDs(ctx context.Context, dollar_1 []int32) ([]ListPublicGenesByGeckoIDsRow, error)
+	// Used to pre-load cover photos (first by display_order) for the list view.
+	ListPublicMediaByGeckoIDs(ctx context.Context, dollar_1 []int32) ([]ListPublicMediaByGeckoIDsRow, error)
 	ListSpecies(ctx context.Context) ([]Species, error)
 	ListTraits(ctx context.Context) ([]GeneticDictionary, error)
 	ListTraitsBySpecies(ctx context.Context, speciesID int32) ([]GeneticDictionary, error)
