@@ -85,7 +85,12 @@ const pageTitle = computed(() => {
           :key="n.name"
           :to="{ name: n.name }"
           class="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-brand-dark-700 transition-colors hover:bg-brand-cream-100 hover:text-brand-dark-950"
-          active-class="!bg-brand-gold-100 !text-brand-gold-900 shadow-sm"
+          :active-class="
+            n.name === 'dashboard'
+              ? ''
+              : '!bg-brand-gold-100 !text-brand-gold-900 shadow-sm'
+          "
+          exact-active-class="!bg-brand-gold-100 !text-brand-gold-900 shadow-sm"
         >
           <component :is="n.icon" class="size-5 shrink-0" stroke-width="1.75" />
           <span>{{ n.label }}</span>
@@ -193,7 +198,9 @@ const pageTitle = computed(() => {
             :key="n.name"
             class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-brand-dark-700 transition-colors hover:bg-brand-cream-100 hover:text-brand-dark-950 text-left"
             :class="{
-              '!bg-brand-gold-100 !text-brand-gold-900 shadow-sm': route.name === n.name,
+              '!bg-brand-gold-100 !text-brand-gold-900 shadow-sm':
+                route.name === n.name ||
+                (n.name === 'geckos' && route.name === 'gecko-detail'),
             }"
             @click="go(n.name)"
           >

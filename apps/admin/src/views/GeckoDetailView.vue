@@ -59,6 +59,7 @@ function back() {
 </script>
 
 <template>
+  <div>
   <!-- Loading -->
   <div v-if="isLoading" class="flex flex-col gap-6">
     <Skeleton class="h-6 w-24" />
@@ -315,6 +316,7 @@ function back() {
         </Card>
       </TabsContent>
     </Tabs>
+  </div>
   </div>
 </template>
 
