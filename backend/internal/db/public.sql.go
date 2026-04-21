@@ -16,16 +16,8 @@ SELECT
     g.id,
     g.code,
     g.name,
-    g.species_id,
     g.sex,
     g.hatch_date,
-    g.acquired_date,
-    g.status,
-    g.sire_id,
-    g.dam_id,
-    g.notes,
-    g.created_at,
-    g.updated_at,
     s.code         AS species_code,
     s.common_name  AS species_common_name,
     l.price_usd    AS list_price_usd
@@ -40,22 +32,14 @@ LIMIT 1
 `
 
 type GetAvailableGeckoByCodeRow struct {
-	ID                int32            `json:"id"`
-	Code              string           `json:"code"`
-	Name              pgtype.Text      `json:"name"`
-	SpeciesID         int32            `json:"species_id"`
-	Sex               Sex              `json:"sex"`
-	HatchDate         pgtype.Date      `json:"hatch_date"`
-	AcquiredDate      pgtype.Date      `json:"acquired_date"`
-	Status            GeckoStatus      `json:"status"`
-	SireID            pgtype.Int4      `json:"sire_id"`
-	DamID             pgtype.Int4      `json:"dam_id"`
-	Notes             pgtype.Text      `json:"notes"`
-	CreatedAt         pgtype.Timestamp `json:"created_at"`
-	UpdatedAt         pgtype.Timestamp `json:"updated_at"`
-	SpeciesCode       SpeciesCode      `json:"species_code"`
-	SpeciesCommonName string           `json:"species_common_name"`
-	ListPriceUsd      pgtype.Numeric   `json:"list_price_usd"`
+	ID                int32          `json:"id"`
+	Code              string         `json:"code"`
+	Name              pgtype.Text    `json:"name"`
+	Sex               Sex            `json:"sex"`
+	HatchDate         pgtype.Date    `json:"hatch_date"`
+	SpeciesCode       SpeciesCode    `json:"species_code"`
+	SpeciesCommonName string         `json:"species_common_name"`
+	ListPriceUsd      pgtype.Numeric `json:"list_price_usd"`
 }
 
 func (q *Queries) GetAvailableGeckoByCode(ctx context.Context, code string) (GetAvailableGeckoByCodeRow, error) {
@@ -65,16 +49,8 @@ func (q *Queries) GetAvailableGeckoByCode(ctx context.Context, code string) (Get
 		&i.ID,
 		&i.Code,
 		&i.Name,
-		&i.SpeciesID,
 		&i.Sex,
 		&i.HatchDate,
-		&i.AcquiredDate,
-		&i.Status,
-		&i.SireID,
-		&i.DamID,
-		&i.Notes,
-		&i.CreatedAt,
-		&i.UpdatedAt,
 		&i.SpeciesCode,
 		&i.SpeciesCommonName,
 		&i.ListPriceUsd,
@@ -87,16 +63,8 @@ SELECT
     g.id,
     g.code,
     g.name,
-    g.species_id,
     g.sex,
     g.hatch_date,
-    g.acquired_date,
-    g.status,
-    g.sire_id,
-    g.dam_id,
-    g.notes,
-    g.created_at,
-    g.updated_at,
     s.code         AS species_code,
     s.common_name  AS species_common_name,
     l.price_usd    AS list_price_usd
@@ -110,22 +78,14 @@ ORDER BY g.created_at DESC
 `
 
 type ListAvailableGeckosRow struct {
-	ID                int32            `json:"id"`
-	Code              string           `json:"code"`
-	Name              pgtype.Text      `json:"name"`
-	SpeciesID         int32            `json:"species_id"`
-	Sex               Sex              `json:"sex"`
-	HatchDate         pgtype.Date      `json:"hatch_date"`
-	AcquiredDate      pgtype.Date      `json:"acquired_date"`
-	Status            GeckoStatus      `json:"status"`
-	SireID            pgtype.Int4      `json:"sire_id"`
-	DamID             pgtype.Int4      `json:"dam_id"`
-	Notes             pgtype.Text      `json:"notes"`
-	CreatedAt         pgtype.Timestamp `json:"created_at"`
-	UpdatedAt         pgtype.Timestamp `json:"updated_at"`
-	SpeciesCode       SpeciesCode      `json:"species_code"`
-	SpeciesCommonName string           `json:"species_common_name"`
-	ListPriceUsd      pgtype.Numeric   `json:"list_price_usd"`
+	ID                int32          `json:"id"`
+	Code              string         `json:"code"`
+	Name              pgtype.Text    `json:"name"`
+	Sex               Sex            `json:"sex"`
+	HatchDate         pgtype.Date    `json:"hatch_date"`
+	SpeciesCode       SpeciesCode    `json:"species_code"`
+	SpeciesCommonName string         `json:"species_common_name"`
+	ListPriceUsd      pgtype.Numeric `json:"list_price_usd"`
 }
 
 func (q *Queries) ListAvailableGeckos(ctx context.Context) ([]ListAvailableGeckosRow, error) {
@@ -141,16 +101,8 @@ func (q *Queries) ListAvailableGeckos(ctx context.Context) ([]ListAvailableGecko
 			&i.ID,
 			&i.Code,
 			&i.Name,
-			&i.SpeciesID,
 			&i.Sex,
 			&i.HatchDate,
-			&i.AcquiredDate,
-			&i.Status,
-			&i.SireID,
-			&i.DamID,
-			&i.Notes,
-			&i.CreatedAt,
-			&i.UpdatedAt,
 			&i.SpeciesCode,
 			&i.SpeciesCommonName,
 			&i.ListPriceUsd,
