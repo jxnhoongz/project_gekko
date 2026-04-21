@@ -14,6 +14,7 @@ type Querier interface {
 	CountAdmins(ctx context.Context) (int64, error)
 	CountGeckos(ctx context.Context) (int64, error)
 	CountGeckosByStatus(ctx context.Context) ([]CountGeckosByStatusRow, error)
+	CountMediaForGecko(ctx context.Context, geckoID pgtype.Int4) (int64, error)
 	CountWaitlistEntries(ctx context.Context) (int64, error)
 	CreateAdmin(ctx context.Context, arg CreateAdminParams) (AdminUser, error)
 	CreateGecko(ctx context.Context, arg CreateGeckoParams) (Gecko, error)
@@ -24,11 +25,13 @@ type Querier interface {
 	CreateWaitlistEntry(ctx context.Context, arg CreateWaitlistEntryParams) (WaitlistEntry, error)
 	DeleteGecko(ctx context.Context, id int32) error
 	DeleteGenesForGecko(ctx context.Context, geckoID int32) error
+	DeleteMedia(ctx context.Context, id int32) error
 	GetAdminByEmail(ctx context.Context, lower string) (AdminUser, error)
 	GetAdminByID(ctx context.Context, id int32) (AdminUser, error)
 	GetCoverForGecko(ctx context.Context, geckoID pgtype.Int4) (Medium, error)
 	GetGeckoByCode(ctx context.Context, code string) (GetGeckoByCodeRow, error)
 	GetGeckoByID(ctx context.Context, id int32) (GetGeckoByIDRow, error)
+	GetMediaByID(ctx context.Context, id int32) (Medium, error)
 	GetSpeciesByCode(ctx context.Context, code SpeciesCode) (Species, error)
 	GetSpeciesByID(ctx context.Context, id int32) (Species, error)
 	GetTraitByNameAndSpecies(ctx context.Context, arg GetTraitByNameAndSpeciesParams) (GeneticDictionary, error)

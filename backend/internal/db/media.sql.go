@@ -11,6 +11,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countMediaForGecko = `-- name: CountMediaForGecko :one
+SELECT COUNT(*) FROM media WHERE gecko_id = $1
+`
+
+func (q *Queries) CountMediaForGecko(ctx context.Context, geckoID pgtype.Int4) (int64, error) {
+	row := q.db.QueryRow(ctx, countMediaForGecko, geckoID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createMedia = `-- name: CreateMedia :one
 INSERT INTO media (gecko_id, url, type, caption, display_order)
 VALUES ($1, $2, COALESCE($3, 'GALLERY'::media_type), $4, COALESCE($5, 0))
@@ -46,6 +57,15 @@ func (q *Queries) CreateMedia(ctx context.Context, arg CreateMediaParams) (Mediu
 	return i, err
 }
 
+const deleteMedia = `-- name: DeleteMedia :exec
+DELETE FROM media WHERE id = $1
+`
+
+func (q *Queries) DeleteMedia(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, deleteMedia, id)
+	return err
+}
+
 const getCoverForGecko = `-- name: GetCoverForGecko :one
 SELECT id, gecko_id, url, type, caption, display_order, uploaded_at
 FROM media
@@ -56,6 +76,28 @@ LIMIT 1
 
 func (q *Queries) GetCoverForGecko(ctx context.Context, geckoID pgtype.Int4) (Medium, error) {
 	row := q.db.QueryRow(ctx, getCoverForGecko, geckoID)
+	var i Medium
+	err := row.Scan(
+		&i.ID,
+		&i.GeckoID,
+		&i.Url,
+		&i.Type,
+		&i.Caption,
+		&i.DisplayOrder,
+		&i.UploadedAt,
+	)
+	return i, err
+}
+
+const getMediaByID = `-- name: GetMediaByID :one
+SELECT id, gecko_id, url, type, caption, display_order, uploaded_at
+FROM media
+WHERE id = $1
+LIMIT 1
+`
+
+func (q *Queries) GetMediaByID(ctx context.Context, id int32) (Medium, error) {
+	row := q.db.QueryRow(ctx, getMediaByID, id)
 	var i Medium
 	err := row.Scan(
 		&i.ID,
