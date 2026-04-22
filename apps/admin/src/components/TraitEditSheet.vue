@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import {
   DialogRoot,
   DialogPortal,
   DialogOverlay,
   DialogContent,
 } from 'reka-ui';
-import { X, Upload, AlertTriangle } from 'lucide-vue-next';
+import { X, Upload, Clipboard, AlertTriangle } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,21 +67,49 @@ function submit() {
   );
 }
 
-function triggerFileInput() {
-  fileInput.value?.click();
+
+function doUpload(file: File) {
+  if (!props.trait) return;
+  uploadPhoto(
+    { id: props.trait.id, file },
+    { onError: (e: any) => toast.error(e?.response?.data?.error ?? 'Upload failed') },
+  );
 }
 
 function onFileChange(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0];
-  if (!file || !props.trait) return;
-  uploadPhoto(
-    { id: props.trait.id, file },
-    {
-      onError: (e: any) =>
-        toast.error(e?.response?.data?.error ?? 'Upload failed'),
-    },
-  );
+  if (file) doUpload(file);
 }
+
+async function pasteFromClipboard() {
+  try {
+    const items = await navigator.clipboard.read();
+    for (const item of items) {
+      const imageType = item.types.find((t) => t.startsWith('image/'));
+      if (imageType) {
+        const blob = await item.getType(imageType);
+        doUpload(new File([blob], 'pasted-image.png', { type: imageType }));
+        return;
+      }
+    }
+    toast.error('No image found in clipboard');
+  } catch {
+    toast.error('Could not read clipboard');
+  }
+}
+
+function onDocumentPaste(e: ClipboardEvent) {
+  if (!props.open || !props.trait) return;
+  const file = Array.from(e.clipboardData?.files ?? []).find((f) =>
+    f.type.startsWith('image/'),
+  );
+  if (!file) return;
+  e.preventDefault();
+  doUpload(file);
+}
+
+onMounted(() => document.addEventListener('paste', onDocumentPaste));
+onUnmounted(() => document.removeEventListener('paste', onDocumentPaste));
 
 const isHealthWarning = computed(() =>
   props.trait
@@ -142,9 +170,13 @@ const inheritanceTypes = ['RECESSIVE', 'CO_DOMINANT', 'DOMINANT', 'POLYGENIC'];
                 <span v-else class="text-xs text-brand-dark-500">No photo</span>
               </div>
               <div class="flex flex-col gap-2 pt-1">
-                <Button variant="outline" size="sm" :disabled="uploading" @click="triggerFileInput">
+                <Button variant="outline" size="sm" :disabled="uploading" @click="fileInput?.click()">
                   <Upload class="w-4 h-4 mr-1.5" />
                   {{ uploading ? 'Uploading…' : 'Upload photo' }}
+                </Button>
+                <Button variant="outline" size="sm" :disabled="uploading" @click="pasteFromClipboard">
+                  <Clipboard class="w-4 h-4 mr-1.5" />
+                  Paste from clipboard
                 </Button>
                 <p class="text-xs text-brand-dark-600">JPG, PNG, WebP or GIF. Max 10 MB.</p>
               </div>
