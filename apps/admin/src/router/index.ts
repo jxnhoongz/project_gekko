@@ -21,7 +21,16 @@ const routes: RouteRecordRaw[] = [
       { path: 'sales',         name: 'sales',     component: () => import('@/views/SalesView.vue') },
       { path: 'photos',        name: 'photos',    component: () => import('@/views/PhotosView.vue') },
       { path: 'schema',        name: 'schema',        component: () => import('@/views/SchemaView.vue') },
-      { path: 'morph-combos', name: 'morph-combos', component: () => import('@/views/MorphCombosView.vue') },
+      {
+        path: 'morphs',
+        component: () => import('@/views/MorphsLayout.vue'),
+        children: [
+          { path: '', redirect: { name: 'morphs-base' } },
+          { path: 'base',   name: 'morphs-base',   component: () => import('@/views/BaseMorphsView.vue') },
+          { path: 'combos', name: 'morphs-combos', component: () => import('@/views/MorphCombosView.vue') },
+        ],
+      },
+      { path: 'morph-combos', redirect: { name: 'morphs-combos' } },
       { path: 'settings',      name: 'settings',     component: () => import('@/views/SettingsView.vue') },
     ],
   },

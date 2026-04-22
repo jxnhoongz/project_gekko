@@ -42,9 +42,8 @@ const nav: NavItem[] = [
   { name: 'waitlist',  label: 'Waitlist',  icon: ClipboardList },
   { name: 'sales',     label: 'Sales',     icon: DollarSign },
   { name: 'photos',    label: 'Photos',    icon: Image },
-  { name: 'schema',        label: 'Schema',       icon: Database },
-  { name: 'morph-combos', label: 'Morph Combos', icon: Dna },
-  { name: 'settings',     label: 'Settings',     icon: Settings },
+  { name: 'schema',    label: 'Schema',   icon: Database },
+  { name: 'settings', label: 'Settings', icon: Settings },
 ];
 
 const initials = computed(() => {
@@ -69,7 +68,10 @@ function onLogout() {
 }
 
 const pageTitle = computed(() => {
-  const m = nav.find((n) => n.name === route.name);
+  const name = route.name as string;
+  if (name === 'morphs-base') return 'Base Morphs';
+  if (name === 'morphs-combos') return 'Combos';
+  const m = nav.find((n) => n.name === name);
   return m?.label ?? '';
 });
 </script>
@@ -99,6 +101,29 @@ const pageTitle = computed(() => {
           <component :is="n.icon" class="size-5 shrink-0" stroke-width="1.75" />
           <span>{{ n.label }}</span>
         </RouterLink>
+        <!-- Morphs group -->
+        <div>
+          <RouterLink
+            :to="{ name: 'morphs-base' }"
+            class="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-brand-dark-700 transition-colors hover:bg-brand-cream-100 hover:text-brand-dark-950"
+            :class="{ '!text-brand-dark-950': $route.path.startsWith('/morphs') }"
+          >
+            <Dna class="size-5 shrink-0" stroke-width="1.75" />
+            <span>Morphs</span>
+          </RouterLink>
+          <div class="ml-8 flex flex-col gap-0.5">
+            <RouterLink
+              :to="{ name: 'morphs-base' }"
+              class="rounded-md px-3 py-1.5 text-sm text-brand-dark-600 hover:text-brand-dark-950 hover:bg-brand-cream-100 transition-colors"
+              active-class="!text-brand-gold-700 font-medium"
+            >Base</RouterLink>
+            <RouterLink
+              :to="{ name: 'morphs-combos' }"
+              class="rounded-md px-3 py-1.5 text-sm text-brand-dark-600 hover:text-brand-dark-950 hover:bg-brand-cream-100 transition-colors"
+              active-class="!text-brand-gold-700 font-medium"
+            >Combos</RouterLink>
+          </div>
+        </div>
       </nav>
       <div class="border-t border-brand-cream-300 p-3">
         <div class="flex items-center gap-3 rounded-lg px-2 py-2">
@@ -211,6 +236,29 @@ const pageTitle = computed(() => {
             <component :is="n.icon" class="size-5 shrink-0" stroke-width="1.75" />
             <span>{{ n.label }}</span>
           </button>
+          <!-- Morphs group (mobile) -->
+          <div>
+            <button
+              class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-brand-dark-700 transition-colors hover:bg-brand-cream-100 hover:text-brand-dark-950 text-left w-full"
+              :class="{ '!text-brand-dark-950': route.path.startsWith('/morphs') }"
+              @click="go('morphs-base')"
+            >
+              <Dna class="size-5 shrink-0" stroke-width="1.75" />
+              <span>Morphs</span>
+            </button>
+            <div class="ml-8 flex flex-col gap-0.5">
+              <button
+                class="rounded-md px-3 py-1.5 text-sm text-brand-dark-600 hover:text-brand-dark-950 hover:bg-brand-cream-100 transition-colors text-left w-full"
+                :class="{ '!text-brand-gold-700 font-medium': route.name === 'morphs-base' }"
+                @click="go('morphs-base')"
+              >Base</button>
+              <button
+                class="rounded-md px-3 py-1.5 text-sm text-brand-dark-600 hover:text-brand-dark-950 hover:bg-brand-cream-100 transition-colors text-left w-full"
+                :class="{ '!text-brand-gold-700 font-medium': route.name === 'morphs-combos' }"
+                @click="go('morphs-combos')"
+              >Combos</button>
+            </div>
+          </div>
         </nav>
         <div class="border-t border-brand-cream-300 p-3">
           <div class="flex items-center gap-3 px-2 py-2">

@@ -174,3 +174,47 @@ export function useSetCoverMedia() {
     onSuccess: (geckoId) => invalidateGeckos(qc, geckoId),
   });
 }
+
+export function useUpdateTrait() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      payload,
+    }: {
+      id: number;
+      payload: {
+        trait_code: string;
+        description: string;
+        notes: string;
+        inheritance_type: string;
+        super_form_name: string;
+      };
+    }) => {
+      const { data } = await api.patch<Trait>(`/api/traits/${id}`, payload);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['traits'] });
+    },
+  });
+}
+
+export function useUploadTraitPhoto() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, file }: { id: number; file: File }) => {
+      const form = new FormData();
+      form.append('file', file);
+      const { data } = await api.post<{ url: string }>(
+        `/api/traits/${id}/photo`,
+        form,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      );
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['traits'] });
+    },
+  });
+}
