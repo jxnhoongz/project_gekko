@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -102,8 +103,8 @@ func (d *morphCombosDeps) list(w http.ResponseWriter, r *http.Request) {
 
 	// Preload all requirements in one query.
 	ids := make([]int32, len(rows))
-	for i, r := range rows {
-		ids[i] = r.ID
+	for i, mc := range rows {
+		ids[i] = mc.ID
 	}
 	traitRows, err := d.q.ListMorphComboTraits(ctx, ids)
 	if err != nil {
@@ -149,7 +150,7 @@ func (d *morphCombosDeps) get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	mc, err := d.q.GetMorphCombo(ctx, int32(id))
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
 			return
 		}
@@ -221,7 +222,8 @@ func (d *morphCombosDeps) create(w http.ResponseWriter, r *http.Request) {
 	chiCtx := chi.NewRouteContext()
 	chiCtx.URLParams.Add("id", strconv.Itoa(int(mc.ID)))
 	r2 := r.WithContext(context.WithValue(ctx, chi.RouteCtxKey, chiCtx))
-	d.get(w, r2)
+	sr := &statusRecorder{ResponseWriter: w, status: http.StatusCreated}
+	d.get(sr, r2)
 }
 
 func (d *morphCombosDeps) update(w http.ResponseWriter, r *http.Request) {
@@ -233,6 +235,10 @@ func (d *morphCombosDeps) update(w http.ResponseWriter, r *http.Request) {
 	var req updateMorphComboReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid json"})
+		return
+	}
+	if req.Name == "" || req.SpeciesID == 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "name and species_id required"})
 		return
 	}
 	ctx := r.Context()
@@ -253,7 +259,11 @@ func (d *morphCombosDeps) update(w http.ResponseWriter, r *http.Request) {
 		ExamplePhotoUrl: pgText(req.ExamplePhotoUrl),
 	})
 	if err != nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found or update failed"})
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "update failed"})
 		return
 	}
 	if err := qtx.DeleteMorphComboTraits(ctx, mc.ID); err != nil {
