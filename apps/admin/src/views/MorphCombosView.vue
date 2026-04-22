@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { toast } from 'vue-sonner';
 import { Plus, Edit2, Trash2, Dna } from 'lucide-vue-next';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,7 +27,9 @@ function openEdit(combo: MorphCombo) {
 
 function confirmDelete(combo: MorphCombo) {
   if (confirm(`Delete "${combo.name}"?`)) {
-    deleteCombo(combo.id);
+    deleteCombo(combo.id, {
+      onError: () => toast.error('Delete failed'),
+    });
   }
 }
 </script>
@@ -80,12 +83,14 @@ function confirmDelete(combo: MorphCombo) {
           <div class="flex gap-1 shrink-0 ml-2">
             <button
               class="p-1 text-brand-dark-600 hover:text-brand-dark-950"
+              :aria-label="`Edit ${combo.name}`"
               @click="openEdit(combo)"
             >
               <Edit2 class="w-4 h-4" />
             </button>
             <button
               class="p-1 text-brand-dark-600 hover:text-destructive"
+              :aria-label="`Delete ${combo.name}`"
               @click="confirmDelete(combo)"
             >
               <Trash2 class="w-4 h-4" />

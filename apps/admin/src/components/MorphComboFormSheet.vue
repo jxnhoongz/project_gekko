@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
+import { toast } from 'vue-sonner';
 import {
   DialogRoot,
   DialogPortal,
@@ -62,6 +63,8 @@ watch(
           required_zygosity: r.required_zygosity,
         })),
       };
+      addTraitID.value = null;
+      addZygosity.value = 'HOM';
     } else {
       form.value = {
         species_id:
@@ -73,9 +76,47 @@ watch(
         example_photo_url: '',
         requirements: [],
       };
+      addTraitID.value = null;
+      addZygosity.value = 'HOM';
     }
   },
   { immediate: true },
+);
+
+watch(
+  () => props.open,
+  (v) => {
+    if (v) {
+      const c = props.combo;
+      if (c) {
+        form.value = {
+          species_id: c.species_id,
+          name: c.name,
+          code: c.code,
+          description: c.description,
+          notes: c.notes,
+          example_photo_url: c.example_photo_url,
+          requirements: c.requirements.map((r) => ({
+            trait_id: r.trait_id,
+            required_zygosity: r.required_zygosity,
+          })),
+        };
+      } else {
+        form.value = {
+          species_id:
+            speciesData.value?.find((s) => s.code === 'LP')?.id ?? 0,
+          name: '',
+          code: '',
+          description: '',
+          notes: '',
+          example_photo_url: '',
+          requirements: [],
+        };
+      }
+      addTraitID.value = null;
+      addZygosity.value = 'HOM';
+    }
+  },
 );
 
 const { mutate: createCombo, isPending: creating } = useCreateMorphCombo();
@@ -108,9 +149,15 @@ function close() {
 function submit() {
   const payload = { ...form.value };
   if (props.combo) {
-    updateCombo({ id: props.combo.id, payload }, { onSuccess: close });
+    updateCombo({ id: props.combo.id, payload }, {
+      onSuccess: close,
+      onError: (e: any) => toast.error(e?.response?.data?.error ?? 'Save failed'),
+    });
   } else {
-    createCombo(payload, { onSuccess: close });
+    createCombo(payload, {
+      onSuccess: close,
+      onError: (e: any) => toast.error(e?.response?.data?.error ?? 'Save failed'),
+    });
   }
 }
 </script>
@@ -131,6 +178,7 @@ function submit() {
           </h2>
           <button
             class="text-brand-dark-600 hover:text-brand-dark-950"
+            aria-label="Close"
             @click="close"
           >
             <X class="w-5 h-5" />
@@ -189,6 +237,12 @@ function submit() {
             />
           </div>
 
+          <!-- Photo URL -->
+          <div class="space-y-1.5">
+            <Label>Example Photo URL</Label>
+            <Input v-model="form.example_photo_url" placeholder="https://…" />
+          </div>
+
           <!-- Requirements -->
           <div class="space-y-2">
             <Label>Required Traits</Label>
@@ -210,6 +264,7 @@ function submit() {
                   </Badge>
                   <button
                     class="text-brand-dark-600 hover:text-destructive"
+                    aria-label="Remove trait"
                     @click="removeRequirement(i)"
                   >
                     <Trash2 class="w-4 h-4" />
@@ -246,7 +301,7 @@ function submit() {
                 <option value="HET">HET</option>
                 <option value="POSS_HET">POSS HET</option>
               </select>
-              <Button variant="outline" size="sm" @click="addRequirement">
+              <Button variant="outline" size="sm" aria-label="Add trait" @click="addRequirement">
                 <Plus class="w-4 h-4" />
               </Button>
             </div>
