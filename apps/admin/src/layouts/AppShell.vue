@@ -9,6 +9,7 @@ import {
   DollarSign,
   Image,
   Database,
+  Dna,
   Settings,
   Menu,
   LogOut,
@@ -41,8 +42,9 @@ const nav: NavItem[] = [
   { name: 'waitlist',  label: 'Waitlist',  icon: ClipboardList },
   { name: 'sales',     label: 'Sales',     icon: DollarSign },
   { name: 'photos',    label: 'Photos',    icon: Image },
-  { name: 'schema',    label: 'Schema',    icon: Database },
-  { name: 'settings',  label: 'Settings',  icon: Settings },
+  { name: 'schema',        label: 'Schema',       icon: Database },
+  { name: 'morph-combos', label: 'Morph Combos', icon: Dna },
+  { name: 'settings',     label: 'Settings',     icon: Settings },
 ];
 
 const initials = computed(() => {
