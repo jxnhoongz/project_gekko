@@ -22,8 +22,9 @@ type Querier interface {
 	CreateGeckoGene(ctx context.Context, arg CreateGeckoGeneParams) (GeckoGene, error)
 	CreateListing(ctx context.Context, arg CreateListingParams) (Listing, error)
 	CreateMedia(ctx context.Context, arg CreateMediaParams) (Medium, error)
+	CreateMorphCombo(ctx context.Context, arg CreateMorphComboParams) (MorphCombo, error)
 	CreateSpecies(ctx context.Context, arg CreateSpeciesParams) (Species, error)
-	CreateTrait(ctx context.Context, arg CreateTraitParams) (GeneticDictionary, error)
+	CreateTrait(ctx context.Context, arg CreateTraitParams) (CreateTraitRow, error)
 	CreateWaitlistEntry(ctx context.Context, arg CreateWaitlistEntryParams) (WaitlistEntry, error)
 	// Waitlist entries that have been sitting uncontacted >7 days, and
 	// geckos that have been on HOLD >7 days without any status change.
@@ -38,6 +39,8 @@ type Querier interface {
 	DeleteGenesForGecko(ctx context.Context, geckoID int32) error
 	DeleteListing(ctx context.Context, id int32) error
 	DeleteMedia(ctx context.Context, id int32) error
+	DeleteMorphCombo(ctx context.Context, id int32) error
+	DeleteMorphComboTraits(ctx context.Context, comboID int32) error
 	DetachGeckosForListing(ctx context.Context, listingID int32) error
 	GetAdminByEmail(ctx context.Context, lower string) (AdminUser, error)
 	GetAdminByID(ctx context.Context, id int32) (AdminUser, error)
@@ -48,9 +51,13 @@ type Querier interface {
 	GetListing(ctx context.Context, id int32) (Listing, error)
 	GetListingBySku(ctx context.Context, sku pgtype.Text) (int32, error)
 	GetMediaByID(ctx context.Context, id int32) (Medium, error)
+	GetMorphCombo(ctx context.Context, id int32) (MorphCombo, error)
 	GetSpeciesByCode(ctx context.Context, code SpeciesCode) (Species, error)
 	GetSpeciesByID(ctx context.Context, id int32) (Species, error)
-	GetTraitByNameAndSpecies(ctx context.Context, arg GetTraitByNameAndSpeciesParams) (GeneticDictionary, error)
+	GetTraitByNameAndSpecies(ctx context.Context, arg GetTraitByNameAndSpeciesParams) (GetTraitByNameAndSpeciesRow, error)
+	InsertMorphComboTrait(ctx context.Context, arg InsertMorphComboTraitParams) error
+	// Bulk load for DetectMorph — one round trip fetches the full combo catalog.
+	ListAllMorphCombosWithTraits(ctx context.Context) ([]ListAllMorphCombosWithTraitsRow, error)
 	ListAvailableGeckos(ctx context.Context) ([]ListAvailableGeckosRow, error)
 	ListComponentsForListing(ctx context.Context, listingID int32) ([]ListComponentsForListingRow, error)
 	// First photo per gecko (lowest display_order, then oldest) so the list
@@ -67,13 +74,16 @@ type Querier interface {
 	// Returns the media ids for a gecko in the same (display_order, uploaded_at)
 	// order the client sees. Used by set-cover to reassign display_order.
 	ListMediaIDsForGeckoOrdered(ctx context.Context, geckoID pgtype.Int4) ([]int32, error)
-	// Used to compose morphs for the list endpoint in one round trip.
+	ListMorphComboTraits(ctx context.Context, dollar_1 []int32) ([]ListMorphComboTraitsRow, error)
+	ListMorphCombos(ctx context.Context) ([]MorphCombo, error)
+	ListMorphCombosBySpecies(ctx context.Context, speciesID int32) ([]MorphCombo, error)
+	// Used to compose morph labels for the list endpoint in one round trip.
 	ListPublicGenesByGeckoIDs(ctx context.Context, dollar_1 []int32) ([]ListPublicGenesByGeckoIDsRow, error)
 	// Used to pre-load cover photos (first by display_order) for the list view.
 	ListPublicMediaByGeckoIDs(ctx context.Context, dollar_1 []int32) ([]ListPublicMediaByGeckoIDsRow, error)
 	ListSpecies(ctx context.Context) ([]Species, error)
-	ListTraits(ctx context.Context) ([]GeneticDictionary, error)
-	ListTraitsBySpecies(ctx context.Context, speciesID int32) ([]GeneticDictionary, error)
+	ListTraits(ctx context.Context) ([]ListTraitsRow, error)
+	ListTraitsBySpecies(ctx context.Context, speciesID int32) ([]ListTraitsBySpeciesRow, error)
 	ListWaitlistEntries(ctx context.Context, arg ListWaitlistEntriesParams) ([]WaitlistEntry, error)
 	// $1 is the LIKE pattern, e.g. 'ZGLP-2026-%'. NULLIF guards against
 	// legacy codes that don't have a 3rd segment (SPLIT_PART returns '').
@@ -87,6 +97,7 @@ type Querier interface {
 	UpdateMediaCaption(ctx context.Context, arg UpdateMediaCaptionParams) (Medium, error)
 	UpdateMediaCaptionAndOrder(ctx context.Context, arg UpdateMediaCaptionAndOrderParams) (Medium, error)
 	UpdateMediaDisplayOrder(ctx context.Context, arg UpdateMediaDisplayOrderParams) (Medium, error)
+	UpdateMorphCombo(ctx context.Context, arg UpdateMorphComboParams) (MorphCombo, error)
 }
 
 var _ Querier = (*Queries)(nil)

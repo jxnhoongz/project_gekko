@@ -57,6 +57,50 @@ func (ns NullGeckoStatus) Value() (driver.Value, error) {
 	return string(ns.GeckoStatus), nil
 }
 
+type InheritanceType string
+
+const (
+	InheritanceTypeRECESSIVE  InheritanceType = "RECESSIVE"
+	InheritanceTypeCODOMINANT InheritanceType = "CO_DOMINANT"
+	InheritanceTypeDOMINANT   InheritanceType = "DOMINANT"
+	InheritanceTypePOLYGENIC  InheritanceType = "POLYGENIC"
+)
+
+func (e *InheritanceType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = InheritanceType(s)
+	case string:
+		*e = InheritanceType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for InheritanceType: %T", src)
+	}
+	return nil
+}
+
+type NullInheritanceType struct {
+	InheritanceType InheritanceType `json:"inheritance_type"`
+	Valid           bool            `json:"valid"` // Valid is true if InheritanceType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullInheritanceType) Scan(value interface{}) error {
+	if value == nil {
+		ns.InheritanceType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.InheritanceType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullInheritanceType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.InheritanceType), nil
+}
+
 type ListingStatus string
 
 const (
@@ -351,14 +395,18 @@ type GeckoGene struct {
 }
 
 type GeneticDictionary struct {
-	ID          int32            `json:"id"`
-	SpeciesID   int32            `json:"species_id"`
-	TraitName   string           `json:"trait_name"`
-	TraitCode   pgtype.Text      `json:"trait_code"`
-	Description pgtype.Text      `json:"description"`
-	IsDominant  bool             `json:"is_dominant"`
-	CreatedAt   pgtype.Timestamp `json:"created_at"`
-	UpdatedAt   pgtype.Timestamp `json:"updated_at"`
+	ID              int32            `json:"id"`
+	SpeciesID       int32            `json:"species_id"`
+	TraitName       string           `json:"trait_name"`
+	TraitCode       pgtype.Text      `json:"trait_code"`
+	Description     pgtype.Text      `json:"description"`
+	IsDominant      bool             `json:"is_dominant"`
+	CreatedAt       pgtype.Timestamp `json:"created_at"`
+	UpdatedAt       pgtype.Timestamp `json:"updated_at"`
+	InheritanceType InheritanceType  `json:"inheritance_type"`
+	SuperFormName   pgtype.Text      `json:"super_form_name"`
+	ExamplePhotoUrl pgtype.Text      `json:"example_photo_url"`
+	Notes           pgtype.Text      `json:"notes"`
 }
 
 type Listing struct {
@@ -399,6 +447,24 @@ type Medium struct {
 	Caption      pgtype.Text      `json:"caption"`
 	DisplayOrder int32            `json:"display_order"`
 	UploadedAt   pgtype.Timestamp `json:"uploaded_at"`
+}
+
+type MorphCombo struct {
+	ID              int32            `json:"id"`
+	SpeciesID       int32            `json:"species_id"`
+	Name            string           `json:"name"`
+	Code            pgtype.Text      `json:"code"`
+	Description     pgtype.Text      `json:"description"`
+	Notes           pgtype.Text      `json:"notes"`
+	ExamplePhotoUrl pgtype.Text      `json:"example_photo_url"`
+	CreatedAt       pgtype.Timestamp `json:"created_at"`
+	UpdatedAt       pgtype.Timestamp `json:"updated_at"`
+}
+
+type MorphComboTrait struct {
+	ComboID          int32    `json:"combo_id"`
+	TraitID          int32    `json:"trait_id"`
+	RequiredZygosity Zygosity `json:"required_zygosity"`
 }
 
 type Species struct {

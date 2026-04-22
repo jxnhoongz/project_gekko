@@ -39,22 +39,25 @@ func (q *Queries) CreateGeckoGene(ctx context.Context, arg CreateGeckoGeneParams
 const listGeckoGenes = `-- name: ListGeckoGenes :many
 SELECT
   gg.id, gg.gecko_id, gg.trait_id, gg.zygosity, gg.created_at,
-  gd.trait_name, gd.trait_code, gd.is_dominant, gd.species_id
+  gd.trait_name, gd.trait_code, gd.is_dominant, gd.species_id,
+  gd.inheritance_type, gd.super_form_name
 FROM gecko_genes gg
 JOIN genetic_dictionary gd ON gd.id = gg.trait_id
 ORDER BY gg.gecko_id, gd.trait_name
 `
 
 type ListGeckoGenesRow struct {
-	ID         int32            `json:"id"`
-	GeckoID    int32            `json:"gecko_id"`
-	TraitID    int32            `json:"trait_id"`
-	Zygosity   Zygosity         `json:"zygosity"`
-	CreatedAt  pgtype.Timestamp `json:"created_at"`
-	TraitName  string           `json:"trait_name"`
-	TraitCode  pgtype.Text      `json:"trait_code"`
-	IsDominant bool             `json:"is_dominant"`
-	SpeciesID  int32            `json:"species_id"`
+	ID              int32            `json:"id"`
+	GeckoID         int32            `json:"gecko_id"`
+	TraitID         int32            `json:"trait_id"`
+	Zygosity        Zygosity         `json:"zygosity"`
+	CreatedAt       pgtype.Timestamp `json:"created_at"`
+	TraitName       string           `json:"trait_name"`
+	TraitCode       pgtype.Text      `json:"trait_code"`
+	IsDominant      bool             `json:"is_dominant"`
+	SpeciesID       int32            `json:"species_id"`
+	InheritanceType InheritanceType  `json:"inheritance_type"`
+	SuperFormName   pgtype.Text      `json:"super_form_name"`
 }
 
 func (q *Queries) ListGeckoGenes(ctx context.Context) ([]ListGeckoGenesRow, error) {
@@ -76,6 +79,8 @@ func (q *Queries) ListGeckoGenes(ctx context.Context) ([]ListGeckoGenesRow, erro
 			&i.TraitCode,
 			&i.IsDominant,
 			&i.SpeciesID,
+			&i.InheritanceType,
+			&i.SuperFormName,
 		); err != nil {
 			return nil, err
 		}
@@ -90,7 +95,8 @@ func (q *Queries) ListGeckoGenes(ctx context.Context) ([]ListGeckoGenesRow, erro
 const listGenesForGecko = `-- name: ListGenesForGecko :many
 SELECT
   gg.id, gg.gecko_id, gg.trait_id, gg.zygosity, gg.created_at,
-  gd.trait_name, gd.trait_code, gd.is_dominant, gd.species_id
+  gd.trait_name, gd.trait_code, gd.is_dominant, gd.species_id,
+  gd.inheritance_type, gd.super_form_name
 FROM gecko_genes gg
 JOIN genetic_dictionary gd ON gd.id = gg.trait_id
 WHERE gg.gecko_id = $1
@@ -98,15 +104,17 @@ ORDER BY gd.trait_name
 `
 
 type ListGenesForGeckoRow struct {
-	ID         int32            `json:"id"`
-	GeckoID    int32            `json:"gecko_id"`
-	TraitID    int32            `json:"trait_id"`
-	Zygosity   Zygosity         `json:"zygosity"`
-	CreatedAt  pgtype.Timestamp `json:"created_at"`
-	TraitName  string           `json:"trait_name"`
-	TraitCode  pgtype.Text      `json:"trait_code"`
-	IsDominant bool             `json:"is_dominant"`
-	SpeciesID  int32            `json:"species_id"`
+	ID              int32            `json:"id"`
+	GeckoID         int32            `json:"gecko_id"`
+	TraitID         int32            `json:"trait_id"`
+	Zygosity        Zygosity         `json:"zygosity"`
+	CreatedAt       pgtype.Timestamp `json:"created_at"`
+	TraitName       string           `json:"trait_name"`
+	TraitCode       pgtype.Text      `json:"trait_code"`
+	IsDominant      bool             `json:"is_dominant"`
+	SpeciesID       int32            `json:"species_id"`
+	InheritanceType InheritanceType  `json:"inheritance_type"`
+	SuperFormName   pgtype.Text      `json:"super_form_name"`
 }
 
 func (q *Queries) ListGenesForGecko(ctx context.Context, geckoID int32) ([]ListGenesForGeckoRow, error) {
@@ -128,6 +136,8 @@ func (q *Queries) ListGenesForGecko(ctx context.Context, geckoID int32) ([]ListG
 			&i.TraitCode,
 			&i.IsDominant,
 			&i.SpeciesID,
+			&i.InheritanceType,
+			&i.SuperFormName,
 		); err != nil {
 			return nil, err
 		}

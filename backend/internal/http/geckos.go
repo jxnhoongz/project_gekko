@@ -121,8 +121,7 @@ func (d *geckosDeps) listSpecies(w http.ResponseWriter, r *http.Request) {
 
 func (d *geckosDeps) listTraits(w http.ResponseWriter, r *http.Request) {
 	speciesIDParam := r.URL.Query().Get("species_id")
-	var traits []db.GeneticDictionary
-	var err error
+	var out []traitDTO
 
 	if speciesIDParam != "" {
 		n, perr := strconv.Atoi(speciesIDParam)
@@ -130,25 +129,39 @@ func (d *geckosDeps) listTraits(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid species_id"})
 			return
 		}
-		traits, err = d.q.ListTraitsBySpecies(r.Context(), int32(n))
+		rows, err := d.q.ListTraitsBySpecies(r.Context(), int32(n))
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "list traits failed"})
+			return
+		}
+		out = make([]traitDTO, 0, len(rows))
+		for _, t := range rows {
+			out = append(out, traitDTO{
+				ID:          t.ID,
+				SpeciesID:   t.SpeciesID,
+				TraitName:   t.TraitName,
+				TraitCode:   textOrEmpty(t.TraitCode),
+				Description: textOrEmpty(t.Description),
+				IsDominant:  t.IsDominant,
+			})
+		}
 	} else {
-		traits, err = d.q.ListTraits(r.Context())
-	}
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "list traits failed"})
-		return
-	}
-
-	out := make([]traitDTO, 0, len(traits))
-	for _, t := range traits {
-		out = append(out, traitDTO{
-			ID:          t.ID,
-			SpeciesID:   t.SpeciesID,
-			TraitName:   t.TraitName,
-			TraitCode:   textOrEmpty(t.TraitCode),
-			Description: textOrEmpty(t.Description),
-			IsDominant:  t.IsDominant,
-		})
+		rows, err := d.q.ListTraits(r.Context())
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "list traits failed"})
+			return
+		}
+		out = make([]traitDTO, 0, len(rows))
+		for _, t := range rows {
+			out = append(out, traitDTO{
+				ID:          t.ID,
+				SpeciesID:   t.SpeciesID,
+				TraitName:   t.TraitName,
+				TraitCode:   textOrEmpty(t.TraitCode),
+				Description: textOrEmpty(t.Description),
+				IsDominant:  t.IsDominant,
+			})
+		}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"traits": out})
 }

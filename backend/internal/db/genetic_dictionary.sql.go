@@ -12,9 +12,12 @@ import (
 )
 
 const createTrait = `-- name: CreateTrait :one
-INSERT INTO genetic_dictionary (species_id, trait_name, trait_code, description, is_dominant)
+INSERT INTO genetic_dictionary
+  (species_id, trait_name, trait_code, description, is_dominant)
 VALUES ($1, $2, $3, $4, COALESCE($5, FALSE))
-RETURNING id, species_id, trait_name, trait_code, description, is_dominant, created_at, updated_at
+RETURNING id, species_id, trait_name, trait_code, description, is_dominant,
+          inheritance_type, super_form_name, example_photo_url, notes,
+          created_at, updated_at
 `
 
 type CreateTraitParams struct {
@@ -25,7 +28,22 @@ type CreateTraitParams struct {
 	Column5     interface{} `json:"column_5"`
 }
 
-func (q *Queries) CreateTrait(ctx context.Context, arg CreateTraitParams) (GeneticDictionary, error) {
+type CreateTraitRow struct {
+	ID              int32            `json:"id"`
+	SpeciesID       int32            `json:"species_id"`
+	TraitName       string           `json:"trait_name"`
+	TraitCode       pgtype.Text      `json:"trait_code"`
+	Description     pgtype.Text      `json:"description"`
+	IsDominant      bool             `json:"is_dominant"`
+	InheritanceType InheritanceType  `json:"inheritance_type"`
+	SuperFormName   pgtype.Text      `json:"super_form_name"`
+	ExamplePhotoUrl pgtype.Text      `json:"example_photo_url"`
+	Notes           pgtype.Text      `json:"notes"`
+	CreatedAt       pgtype.Timestamp `json:"created_at"`
+	UpdatedAt       pgtype.Timestamp `json:"updated_at"`
+}
+
+func (q *Queries) CreateTrait(ctx context.Context, arg CreateTraitParams) (CreateTraitRow, error) {
 	row := q.db.QueryRow(ctx, createTrait,
 		arg.SpeciesID,
 		arg.TraitName,
@@ -33,7 +51,7 @@ func (q *Queries) CreateTrait(ctx context.Context, arg CreateTraitParams) (Genet
 		arg.Description,
 		arg.Column5,
 	)
-	var i GeneticDictionary
+	var i CreateTraitRow
 	err := row.Scan(
 		&i.ID,
 		&i.SpeciesID,
@@ -41,6 +59,10 @@ func (q *Queries) CreateTrait(ctx context.Context, arg CreateTraitParams) (Genet
 		&i.TraitCode,
 		&i.Description,
 		&i.IsDominant,
+		&i.InheritanceType,
+		&i.SuperFormName,
+		&i.ExamplePhotoUrl,
+		&i.Notes,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -48,7 +70,9 @@ func (q *Queries) CreateTrait(ctx context.Context, arg CreateTraitParams) (Genet
 }
 
 const getTraitByNameAndSpecies = `-- name: GetTraitByNameAndSpecies :one
-SELECT id, species_id, trait_name, trait_code, description, is_dominant, created_at, updated_at
+SELECT id, species_id, trait_name, trait_code, description, is_dominant,
+       inheritance_type, super_form_name, example_photo_url, notes,
+       created_at, updated_at
 FROM genetic_dictionary
 WHERE species_id = $1 AND LOWER(trait_name) = LOWER($2)
 LIMIT 1
@@ -59,9 +83,24 @@ type GetTraitByNameAndSpeciesParams struct {
 	Lower     string `json:"lower"`
 }
 
-func (q *Queries) GetTraitByNameAndSpecies(ctx context.Context, arg GetTraitByNameAndSpeciesParams) (GeneticDictionary, error) {
+type GetTraitByNameAndSpeciesRow struct {
+	ID              int32            `json:"id"`
+	SpeciesID       int32            `json:"species_id"`
+	TraitName       string           `json:"trait_name"`
+	TraitCode       pgtype.Text      `json:"trait_code"`
+	Description     pgtype.Text      `json:"description"`
+	IsDominant      bool             `json:"is_dominant"`
+	InheritanceType InheritanceType  `json:"inheritance_type"`
+	SuperFormName   pgtype.Text      `json:"super_form_name"`
+	ExamplePhotoUrl pgtype.Text      `json:"example_photo_url"`
+	Notes           pgtype.Text      `json:"notes"`
+	CreatedAt       pgtype.Timestamp `json:"created_at"`
+	UpdatedAt       pgtype.Timestamp `json:"updated_at"`
+}
+
+func (q *Queries) GetTraitByNameAndSpecies(ctx context.Context, arg GetTraitByNameAndSpeciesParams) (GetTraitByNameAndSpeciesRow, error) {
 	row := q.db.QueryRow(ctx, getTraitByNameAndSpecies, arg.SpeciesID, arg.Lower)
-	var i GeneticDictionary
+	var i GetTraitByNameAndSpeciesRow
 	err := row.Scan(
 		&i.ID,
 		&i.SpeciesID,
@@ -69,6 +108,10 @@ func (q *Queries) GetTraitByNameAndSpecies(ctx context.Context, arg GetTraitByNa
 		&i.TraitCode,
 		&i.Description,
 		&i.IsDominant,
+		&i.InheritanceType,
+		&i.SuperFormName,
+		&i.ExamplePhotoUrl,
+		&i.Notes,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -76,20 +119,37 @@ func (q *Queries) GetTraitByNameAndSpecies(ctx context.Context, arg GetTraitByNa
 }
 
 const listTraits = `-- name: ListTraits :many
-SELECT id, species_id, trait_name, trait_code, description, is_dominant, created_at, updated_at
+SELECT id, species_id, trait_name, trait_code, description, is_dominant,
+       inheritance_type, super_form_name, example_photo_url, notes,
+       created_at, updated_at
 FROM genetic_dictionary
 ORDER BY species_id, trait_name
 `
 
-func (q *Queries) ListTraits(ctx context.Context) ([]GeneticDictionary, error) {
+type ListTraitsRow struct {
+	ID              int32            `json:"id"`
+	SpeciesID       int32            `json:"species_id"`
+	TraitName       string           `json:"trait_name"`
+	TraitCode       pgtype.Text      `json:"trait_code"`
+	Description     pgtype.Text      `json:"description"`
+	IsDominant      bool             `json:"is_dominant"`
+	InheritanceType InheritanceType  `json:"inheritance_type"`
+	SuperFormName   pgtype.Text      `json:"super_form_name"`
+	ExamplePhotoUrl pgtype.Text      `json:"example_photo_url"`
+	Notes           pgtype.Text      `json:"notes"`
+	CreatedAt       pgtype.Timestamp `json:"created_at"`
+	UpdatedAt       pgtype.Timestamp `json:"updated_at"`
+}
+
+func (q *Queries) ListTraits(ctx context.Context) ([]ListTraitsRow, error) {
 	rows, err := q.db.Query(ctx, listTraits)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []GeneticDictionary{}
+	items := []ListTraitsRow{}
 	for rows.Next() {
-		var i GeneticDictionary
+		var i ListTraitsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.SpeciesID,
@@ -97,6 +157,10 @@ func (q *Queries) ListTraits(ctx context.Context) ([]GeneticDictionary, error) {
 			&i.TraitCode,
 			&i.Description,
 			&i.IsDominant,
+			&i.InheritanceType,
+			&i.SuperFormName,
+			&i.ExamplePhotoUrl,
+			&i.Notes,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -111,21 +175,38 @@ func (q *Queries) ListTraits(ctx context.Context) ([]GeneticDictionary, error) {
 }
 
 const listTraitsBySpecies = `-- name: ListTraitsBySpecies :many
-SELECT id, species_id, trait_name, trait_code, description, is_dominant, created_at, updated_at
+SELECT id, species_id, trait_name, trait_code, description, is_dominant,
+       inheritance_type, super_form_name, example_photo_url, notes,
+       created_at, updated_at
 FROM genetic_dictionary
 WHERE species_id = $1
 ORDER BY trait_name
 `
 
-func (q *Queries) ListTraitsBySpecies(ctx context.Context, speciesID int32) ([]GeneticDictionary, error) {
+type ListTraitsBySpeciesRow struct {
+	ID              int32            `json:"id"`
+	SpeciesID       int32            `json:"species_id"`
+	TraitName       string           `json:"trait_name"`
+	TraitCode       pgtype.Text      `json:"trait_code"`
+	Description     pgtype.Text      `json:"description"`
+	IsDominant      bool             `json:"is_dominant"`
+	InheritanceType InheritanceType  `json:"inheritance_type"`
+	SuperFormName   pgtype.Text      `json:"super_form_name"`
+	ExamplePhotoUrl pgtype.Text      `json:"example_photo_url"`
+	Notes           pgtype.Text      `json:"notes"`
+	CreatedAt       pgtype.Timestamp `json:"created_at"`
+	UpdatedAt       pgtype.Timestamp `json:"updated_at"`
+}
+
+func (q *Queries) ListTraitsBySpecies(ctx context.Context, speciesID int32) ([]ListTraitsBySpeciesRow, error) {
 	rows, err := q.db.Query(ctx, listTraitsBySpecies, speciesID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []GeneticDictionary{}
+	items := []ListTraitsBySpeciesRow{}
 	for rows.Next() {
-		var i GeneticDictionary
+		var i ListTraitsBySpeciesRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.SpeciesID,
@@ -133,6 +214,10 @@ func (q *Queries) ListTraitsBySpecies(ctx context.Context, speciesID int32) ([]G
 			&i.TraitCode,
 			&i.Description,
 			&i.IsDominant,
+			&i.InheritanceType,
+			&i.SuperFormName,
+			&i.ExamplePhotoUrl,
+			&i.Notes,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

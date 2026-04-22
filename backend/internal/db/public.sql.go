@@ -120,9 +120,12 @@ func (q *Queries) ListAvailableGeckos(ctx context.Context) ([]ListAvailableGecko
 const listPublicGenesByGeckoIDs = `-- name: ListPublicGenesByGeckoIDs :many
 SELECT
   gg.gecko_id,
+  gd.id        AS trait_id,
   gd.trait_name,
   gd.trait_code,
-  gg.zygosity
+  gg.zygosity,
+  gd.inheritance_type,
+  gd.super_form_name
 FROM gecko_genes gg
 JOIN genetic_dictionary gd ON gd.id = gg.trait_id
 WHERE gg.gecko_id = ANY($1::int[])
@@ -130,13 +133,16 @@ ORDER BY gg.gecko_id, gd.trait_name
 `
 
 type ListPublicGenesByGeckoIDsRow struct {
-	GeckoID   int32       `json:"gecko_id"`
-	TraitName string      `json:"trait_name"`
-	TraitCode pgtype.Text `json:"trait_code"`
-	Zygosity  Zygosity    `json:"zygosity"`
+	GeckoID         int32           `json:"gecko_id"`
+	TraitID         int32           `json:"trait_id"`
+	TraitName       string          `json:"trait_name"`
+	TraitCode       pgtype.Text     `json:"trait_code"`
+	Zygosity        Zygosity        `json:"zygosity"`
+	InheritanceType InheritanceType `json:"inheritance_type"`
+	SuperFormName   pgtype.Text     `json:"super_form_name"`
 }
 
-// Used to compose morphs for the list endpoint in one round trip.
+// Used to compose morph labels for the list endpoint in one round trip.
 func (q *Queries) ListPublicGenesByGeckoIDs(ctx context.Context, dollar_1 []int32) ([]ListPublicGenesByGeckoIDsRow, error) {
 	rows, err := q.db.Query(ctx, listPublicGenesByGeckoIDs, dollar_1)
 	if err != nil {
@@ -148,9 +154,12 @@ func (q *Queries) ListPublicGenesByGeckoIDs(ctx context.Context, dollar_1 []int3
 		var i ListPublicGenesByGeckoIDsRow
 		if err := rows.Scan(
 			&i.GeckoID,
+			&i.TraitID,
 			&i.TraitName,
 			&i.TraitCode,
 			&i.Zygosity,
+			&i.InheritanceType,
+			&i.SuperFormName,
 		); err != nil {
 			return nil, err
 		}
