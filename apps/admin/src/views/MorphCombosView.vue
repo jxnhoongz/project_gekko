@@ -1,15 +1,21 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { toast } from 'vue-sonner';
 import { Plus, Edit2, Trash2, Dna } from 'lucide-vue-next';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useMorphCombos, useDeleteMorphCombo } from '@/composables/useMorphCombos';
+import { useSpecies } from '@/composables/useGeckos';
 import MorphComboFormSheet from '@/components/MorphComboFormSheet.vue';
 import type { MorphCombo } from '@/types/morph';
 
-const { data, isLoading } = useMorphCombos();
+const { data: species } = useSpecies();
+const selectedSpeciesCode = ref<string | null>(null);
+
+const { data, isLoading } = useMorphCombos(
+  computed(() => selectedSpeciesCode.value ?? undefined),
+);
 const { mutate: deleteCombo } = useDeleteMorphCombo();
 
 const sheetOpen = ref(false);
@@ -48,6 +54,18 @@ function confirmDelete(combo: MorphCombo) {
         <Plus class="w-4 h-4 mr-2" />
         Add Combo
       </Button>
+    </div>
+
+    <!-- Species filter -->
+    <div class="mb-6 flex items-center gap-3">
+      <label class="text-sm font-medium text-brand-dark-700 shrink-0">Species</label>
+      <select
+        v-model="selectedSpeciesCode"
+        class="h-9 rounded-md border border-brand-cream-300 bg-white px-3 text-sm text-brand-dark-950 focus:outline-none focus:ring-2 focus:ring-brand-gold-500"
+      >
+        <option :value="null">All species</option>
+        <option v-for="s in species" :key="s.id" :value="s.code">{{ s.common_name }}</option>
+      </select>
     </div>
 
     <!-- Loading -->

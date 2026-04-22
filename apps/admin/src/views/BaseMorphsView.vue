@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { Edit2, AlertTriangle } from 'lucide-vue-next';
-import { useTraits } from '@/composables/useGeckos';
+import { useTraits, useSpecies } from '@/composables/useGeckos';
 import TraitEditSheet from '@/components/TraitEditSheet.vue';
 import type { Trait } from '@/types/gecko';
 import type { InheritanceType } from '@/types/morph';
 
-const { data: traits, isLoading } = useTraits();
+const { data: species } = useSpecies();
+const selectedSpeciesId = ref<number | null>(null);
+
+const { data: traits, isLoading } = useTraits(selectedSpeciesId);
 
 const sheetOpen = ref(false);
 const editing = ref<Trait | null>(null);
@@ -32,6 +35,18 @@ function hasHealthWarning(t: Trait) {
 
 <template>
   <div>
+    <!-- Species filter -->
+    <div class="mb-4 flex items-center gap-3">
+      <label class="text-sm font-medium text-brand-dark-700 shrink-0">Species</label>
+      <select
+        v-model="selectedSpeciesId"
+        class="h-9 rounded-md border border-brand-cream-300 bg-white px-3 text-sm text-brand-dark-950 focus:outline-none focus:ring-2 focus:ring-brand-gold-500"
+      >
+        <option :value="null">All species</option>
+        <option v-for="s in species" :key="s.id" :value="s.id">{{ s.common_name }}</option>
+      </select>
+    </div>
+
     <!-- Loading -->
     <div v-if="isLoading" class="text-brand-dark-600 text-sm py-8">Loading…</div>
 
