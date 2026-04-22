@@ -40,6 +40,8 @@ watch(
         inheritance_type: t.inheritance_type,
         super_form_name: t.super_form_name,
       };
+      // Clear any pending file from a previous session
+      pendingFile.value = null;
     }
   },
   { immediate: true },
@@ -48,56 +50,47 @@ watch(
 const { mutate: updateTrait, isPending: saving } = useUpdateTrait();
 const { mutate: uploadPhoto, isPending: uploading } = useUploadTraitPhoto();
 
-const photoPreview = computed(() => props.trait?.example_photo_url || null);
+// Local pending file — only uploaded when Save is clicked
+const pendingFile = ref<File | null>(null);
+const localPreviewUrl = ref<string | null>(null);
+
+watch(pendingFile, (file) => {
+  if (localPreviewUrl.value) {
+    URL.revokeObjectURL(localPreviewUrl.value);
+    localPreviewUrl.value = null;
+  }
+  if (file) localPreviewUrl.value = URL.createObjectURL(file);
+});
+
+onUnmounted(() => {
+  if (localPreviewUrl.value) URL.revokeObjectURL(localPreviewUrl.value);
+});
+
+const photoPreview = computed(
+  () => localPreviewUrl.value || props.trait?.example_photo_url || null,
+);
+
 const fileInput = ref<HTMLInputElement | null>(null);
 
-function close() {
-  emit('update:open', false);
-}
-
-function submit() {
-  if (!props.trait) return;
-  updateTrait(
-    { id: props.trait.id, payload: form.value },
-    {
-      onSuccess: close,
-      onError: (e: any) =>
-        toast.error(e?.response?.data?.error ?? 'Save failed'),
-    },
-  );
-}
-
-
-function doUpload(file: File) {
-  if (!props.trait) return;
-  uploadPhoto(
-    { id: props.trait.id, file },
-    { onError: (e: any) => toast.error(e?.response?.data?.error ?? 'Upload failed') },
-  );
+function setFile(file: File) {
+  pendingFile.value = file;
 }
 
 function onFileChange(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0];
-  if (file) doUpload(file);
+  if (file) setFile(file);
 }
 
-async function pasteFromClipboard() {
-  try {
-    const items = await navigator.clipboard.read();
-    for (const item of items) {
-      const imageType = item.types.find((t) => t.startsWith('image/'));
-      if (imageType) {
-        const blob = await item.getType(imageType);
-        doUpload(new File([blob], 'pasted-image.png', { type: imageType }));
-        return;
-      }
-    }
-    toast.error('No image found in clipboard');
-  } catch {
-    toast.error('Could not read clipboard');
-  }
+function onPasteInZone(e: ClipboardEvent) {
+  const file = Array.from(e.clipboardData?.files ?? []).find((f) =>
+    f.type.startsWith('image/'),
+  );
+  if (!file) return;
+  e.preventDefault();
+  setFile(file);
 }
 
+// Global Ctrl+V while drawer is open
 function onDocumentPaste(e: ClipboardEvent) {
   if (!props.open || !props.trait) return;
   const file = Array.from(e.clipboardData?.files ?? []).find((f) =>
@@ -105,11 +98,41 @@ function onDocumentPaste(e: ClipboardEvent) {
   );
   if (!file) return;
   e.preventDefault();
-  doUpload(file);
+  setFile(file);
 }
 
 onMounted(() => document.addEventListener('paste', onDocumentPaste));
 onUnmounted(() => document.removeEventListener('paste', onDocumentPaste));
+
+function close() {
+  emit('update:open', false);
+}
+
+function submit() {
+  if (!props.trait) return;
+
+  const doSave = () => {
+    updateTrait(
+      { id: props.trait!.id, payload: form.value },
+      {
+        onSuccess: close,
+        onError: (e: any) => toast.error(e?.response?.data?.error ?? 'Save failed'),
+      },
+    );
+  };
+
+  if (pendingFile.value) {
+    uploadPhoto(
+      { id: props.trait.id, file: pendingFile.value },
+      {
+        onSuccess: doSave,
+        onError: (e: any) => toast.error(e?.response?.data?.error ?? 'Upload failed'),
+      },
+    );
+  } else {
+    doSave();
+  }
+}
 
 const isHealthWarning = computed(() =>
   props.trait
@@ -158,8 +181,14 @@ const inheritanceTypes = ['RECESSIVE', 'CO_DOMINANT', 'DOMINANT', 'POLYGENIC'];
           <div class="space-y-2">
             <Label>Example Photo</Label>
             <div class="flex items-start gap-4">
+              <!-- Preview / paste zone: click to focus, then Ctrl+V -->
               <div
-                class="w-24 h-24 rounded-lg border border-brand-cream-300 bg-brand-cream-100 flex items-center justify-center overflow-hidden shrink-0"
+                tabindex="0"
+                class="w-24 h-24 rounded-lg border-2 border-brand-cream-300 bg-brand-cream-100 flex items-center justify-center overflow-hidden shrink-0 cursor-pointer focus:outline-none focus:border-brand-gold-500 focus:ring-2 focus:ring-brand-gold-200 transition-colors"
+                :class="photoPreview ? 'border-solid' : 'border-dashed'"
+                title="Click then Ctrl+V to paste an image"
+                @paste="onPasteInZone"
+                @click="($el as HTMLElement).focus()"
               >
                 <img
                   v-if="photoPreview"
@@ -167,18 +196,23 @@ const inheritanceTypes = ['RECESSIVE', 'CO_DOMINANT', 'DOMINANT', 'POLYGENIC'];
                   class="w-full h-full object-cover"
                   alt="Trait photo"
                 />
-                <span v-else class="text-xs text-brand-dark-500">No photo</span>
+                <div v-else class="flex flex-col items-center gap-1">
+                  <Clipboard class="w-5 h-5 text-brand-dark-400" />
+                  <span class="text-[10px] text-brand-dark-500">Ctrl+V</span>
+                </div>
               </div>
               <div class="flex flex-col gap-2 pt-1">
                 <Button variant="outline" size="sm" :disabled="uploading" @click="fileInput?.click()">
                   <Upload class="w-4 h-4 mr-1.5" />
-                  {{ uploading ? 'Uploading…' : 'Upload photo' }}
+                  Upload photo
                 </Button>
-                <Button variant="outline" size="sm" :disabled="uploading" @click="pasteFromClipboard">
-                  <Clipboard class="w-4 h-4 mr-1.5" />
-                  Paste from clipboard
-                </Button>
-                <p class="text-xs text-brand-dark-600">JPG, PNG, WebP or GIF. Max 10 MB.</p>
+                <p class="text-xs text-brand-dark-600">
+                  JPG, PNG, WebP or GIF. Max 10 MB.<br />
+                  Or click the box and press Ctrl+V.
+                </p>
+                <p v-if="pendingFile" class="text-xs text-brand-gold-700 font-medium">
+                  Photo ready — will upload on save.
+                </p>
               </div>
             </div>
             <input
@@ -239,8 +273,8 @@ const inheritanceTypes = ['RECESSIVE', 'CO_DOMINANT', 'DOMINANT', 'POLYGENIC'];
         <!-- Footer -->
         <div class="px-6 py-4 border-t border-brand-cream-300 flex justify-end gap-3">
           <Button variant="ghost" @click="close">Cancel</Button>
-          <Button :disabled="saving" @click="submit">
-            {{ saving ? 'Saving…' : 'Save Changes' }}
+          <Button :disabled="saving || uploading" @click="submit">
+            {{ uploading ? 'Uploading…' : saving ? 'Saving…' : 'Save Changes' }}
           </Button>
         </div>
       </DialogContent>
