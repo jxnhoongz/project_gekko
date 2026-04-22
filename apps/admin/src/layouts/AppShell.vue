@@ -69,7 +69,7 @@ function onLogout() {
 
 const pageTitle = computed(() => {
   const name = route.name as string;
-  if (name === 'morphs-base') return 'Base Morphs';
+  if (name === 'morphs-base') return 'Traits';
   if (name === 'morphs-combos') return 'Combos';
   const m = nav.find((n) => n.name === name);
   return m?.label ?? '';
@@ -116,7 +116,7 @@ const pageTitle = computed(() => {
               :to="{ name: 'morphs-base' }"
               class="rounded-md px-3 py-1.5 text-sm text-brand-dark-600 hover:text-brand-dark-950 hover:bg-brand-cream-100 transition-colors"
               active-class="!text-brand-gold-700 font-medium"
-            >Base</RouterLink>
+            >Traits</RouterLink>
             <RouterLink
               :to="{ name: 'morphs-combos' }"
               class="rounded-md px-3 py-1.5 text-sm text-brand-dark-600 hover:text-brand-dark-950 hover:bg-brand-cream-100 transition-colors"
@@ -251,7 +251,7 @@ const pageTitle = computed(() => {
                 class="rounded-md px-3 py-1.5 text-sm text-brand-dark-600 hover:text-brand-dark-950 hover:bg-brand-cream-100 transition-colors text-left w-full"
                 :class="{ '!text-brand-gold-700 font-medium': route.name === 'morphs-base' }"
                 @click="go('morphs-base')"
-              >Base</button>
+              >Traits</button>
               <button
                 class="rounded-md px-3 py-1.5 text-sm text-brand-dark-600 hover:text-brand-dark-950 hover:bg-brand-cream-100 transition-colors text-left w-full"
                 :class="{ '!text-brand-gold-700 font-medium': route.name === 'morphs-combos' }"

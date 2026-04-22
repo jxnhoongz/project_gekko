@@ -5,7 +5,7 @@ import { Dna } from 'lucide-vue-next';
 
 const route = useRoute();
 const tabs = [
-  { name: 'morphs-base',   label: 'Base Morphs' },
+  { name: 'morphs-base',   label: 'Traits' },
   { name: 'morphs-combos', label: 'Combos' },
 ];
 const activeTab = computed(() => route.name);
