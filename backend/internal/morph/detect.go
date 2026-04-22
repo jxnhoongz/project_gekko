@@ -59,6 +59,9 @@ func Detect(genes []GeneRow, combos []Combo) string {
 	covered := make(map[int32]bool)
 
 	for _, combo := range sorted {
+		if len(combo.Requirements) == 0 {
+			continue
+		}
 		// Skip if any required trait is already covered by a longer combo.
 		skip := false
 		for _, req := range combo.Requirements {
@@ -110,7 +113,9 @@ func Detect(genes []GeneRow, combos []Combo) string {
 		}
 	}
 
-	parts := append(matchedNames, remaining...)
+	parts := make([]string, 0, len(matchedNames)+len(remaining))
+	parts = append(parts, matchedNames...)
+	parts = append(parts, remaining...)
 	if len(parts) == 0 {
 		return "Normal"
 	}
