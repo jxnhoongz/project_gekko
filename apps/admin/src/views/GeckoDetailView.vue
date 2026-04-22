@@ -30,7 +30,7 @@ import ListingFormSheet from '@/components/ListingFormSheet.vue';
 import { useGecko, useDeleteGecko } from '@/composables/useGeckos';
 import { useListings } from '@/composables/useListings';
 import type { GeckoStatus, Sex, Zygosity } from '@/types/gecko';
-import { morphFromTraits, STATUS_LABEL, SEX_LABEL } from '@/types/gecko';
+import { STATUS_LABEL, SEX_LABEL } from '@/types/gecko';
 import { LISTING_STATUS_LABEL, LISTING_TYPE_LABEL, type Listing } from '@/types/listing';
 import { formatDate, ageFromBirth } from '@/lib/format';
 
@@ -91,10 +91,6 @@ const zygBadge: Record<Zygosity, BadgeVariants['variant']> = {
   HET:      'muted',
   POSS_HET: 'outline',
 };
-
-const displayMorph = computed(() =>
-  gecko.value ? morphFromTraits(gecko.value.traits) : '',
-);
 
 function back() {
   router.push({ name: 'geckos' });
@@ -185,7 +181,7 @@ function back() {
             </h1>
             <p class="text-brand-dark-600">
               {{ gecko.species_name }} ·
-              <span class="text-brand-dark-700 font-medium">{{ displayMorph }}</span>
+              <span class="text-brand-dark-700 font-medium">{{ gecko.morph_label }}</span>
             </p>
           </div>
           <p v-if="gecko.notes" class="text-sm text-brand-dark-700 max-w-xl">

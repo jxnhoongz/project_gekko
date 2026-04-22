@@ -6,7 +6,7 @@ import { Badge, type BadgeVariants } from '@/components/ui/badge';
 import { Mars, Venus, HelpCircle } from 'lucide-vue-next';
 import LowPolyGecko from '@/components/art/LowPolyGecko.vue';
 import type { Gecko, GeckoStatus, Sex } from '@/types/gecko';
-import { morphFromTraits, STATUS_LABEL } from '@/types/gecko';
+import { STATUS_LABEL } from '@/types/gecko';
 import { ageFromBirth } from '@/lib/format';
 
 const props = defineProps<{ gecko: Gecko }>();
@@ -34,8 +34,6 @@ const sexColor = computed(() => {
   };
   return m[props.gecko.sex];
 });
-
-const displayMorph = computed(() => morphFromTraits(props.gecko.traits));
 
 function open() {
   router.push({ name: 'gecko-detail', params: { id: props.gecko.id } });
@@ -88,7 +86,7 @@ function open() {
       <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-brand-dark-600">
         <span>{{ gecko.species_name }}</span>
         <span class="size-1 rounded-full bg-brand-cream-400" />
-        <span class="text-brand-dark-700 font-medium line-clamp-1">{{ displayMorph }}</span>
+        <span class="text-brand-dark-700 font-medium line-clamp-1">{{ gecko.morph_label }}</span>
       </div>
       <div class="flex items-center justify-between pt-3 border-t border-brand-cream-200 text-xs">
         <div class="flex items-center gap-1.5">

@@ -18,7 +18,7 @@ export const morphComboKeys = {
 
 export function useMorphCombos(speciesCode?: MaybeRef<string>) {
   return useQuery({
-    queryKey: morphComboKeys.list(unref(speciesCode)),
+    queryKey: () => morphComboKeys.list(unref(speciesCode)),
     queryFn: async () => {
       const params = unref(speciesCode)
         ? { species_code: unref(speciesCode) }
