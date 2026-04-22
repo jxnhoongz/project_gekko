@@ -87,6 +87,8 @@ CREATE INDEX morph_combo_traits_trait_idx ON morph_combo_traits (trait_id);
 | Raptor | Combo morph — moves to `morph_combos` |
 | Super Snow | Derived form — auto-generated from `CO_DOMINANT` Mack Snow at `HOM` zygosity |
 
+**Migration safety:** Both rows have zero `gecko_genes` references in the current database (verified 2026-04-22). The migration can `DELETE` them directly with no rewrite step needed. If this migration ever needs to run against a DB that *does* have gecko rows pointing at these traits, the migration must first rewrite those `gecko_genes` rows to the component traits (Tremper Albino + Eclipse for Raptor; Mack Snow for Super Snow) before deleting the synthetic entries.
+
 ### Updated LP trait catalog
 
 | Trait Name | Code | inheritance_type | super_form_name |
@@ -171,6 +173,13 @@ Example outputs:
 - No traits → `"Normal"`
 
 The combos list is fetched from the DB once per request (or per gecko-list batch) and passed in — no N+1 queries.
+
+**Critical: "longest match first" ordering.** Without sorting by `len(requirements) DESC` before the loop, a 3-trait combo like Diablo Blanco (Tremper + Blizzard + Eclipse) would be shadowed by the 2-trait Raptor (Tremper + Eclipse) and render as `"Raptor Blizzard"` instead of `"Diablo Blanco"`. The unit tests **must** include this case explicitly:
+
+```
+DetectMorph([HOM Tremper, HOM Eclipse, HOM Blizzard]) == "Diablo Blanco"  // not "Raptor Blizzard"
+DetectMorph([HOM Tremper, HOM Eclipse])                == "Raptor"
+```
 
 ---
 
