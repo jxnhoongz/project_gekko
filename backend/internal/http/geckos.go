@@ -16,6 +16,7 @@ import (
 
 	"github.com/jxnhoongz/project_gekko/backend/internal/auth"
 	"github.com/jxnhoongz/project_gekko/backend/internal/db"
+	"github.com/jxnhoongz/project_gekko/backend/internal/morph"
 )
 
 // MountGeckos registers admin-only read endpoints for species, traits, geckos.
@@ -49,20 +50,26 @@ type speciesDTO struct {
 }
 
 type traitDTO struct {
-	ID          int32  `json:"id"`
-	SpeciesID   int32  `json:"species_id"`
-	TraitName   string `json:"trait_name"`
-	TraitCode   string `json:"trait_code"`
-	Description string `json:"description"`
-	IsDominant  bool   `json:"is_dominant"`
+	ID              int32  `json:"id"`
+	SpeciesID       int32  `json:"species_id"`
+	TraitName       string `json:"trait_name"`
+	TraitCode       string `json:"trait_code"`
+	Description     string `json:"description"`
+	IsDominant      bool   `json:"is_dominant"`
+	InheritanceType string `json:"inheritance_type"`
+	SuperFormName   string `json:"super_form_name"`
+	ExamplePhotoUrl string `json:"example_photo_url"`
+	Notes           string `json:"notes"`
 }
 
 type geckoGeneDTO struct {
-	TraitID   int32  `json:"trait_id"`
-	TraitName string `json:"trait_name"`
-	TraitCode string `json:"trait_code"`
-	Zygosity  string `json:"zygosity"`
-	IsDominant bool  `json:"is_dominant"`
+	TraitID         int32  `json:"trait_id"`
+	TraitName       string `json:"trait_name"`
+	TraitCode       string `json:"trait_code"`
+	Zygosity        string `json:"zygosity"`
+	IsDominant      bool   `json:"is_dominant"`
+	InheritanceType string `json:"inheritance_type"`
+	SuperFormName   string `json:"super_form_name"`
 }
 
 type mediaDTO struct {
@@ -87,6 +94,7 @@ type geckoDTO struct {
 	SireID        *int32        `json:"sire_id"`
 	DamID         *int32        `json:"dam_id"`
 	Notes         string        `json:"notes"`
+	MorphLabel    string        `json:"morph_label"`
 	CreatedAt     time.Time     `json:"created_at"`
 	Traits        []geckoGeneDTO `json:"traits"`
 	CoverPhotoUrl *string       `json:"cover_photo_url"`
@@ -99,6 +107,63 @@ type listGeckosResp struct {
 }
 
 // ---- handlers ----
+
+func loadCombos(ctx context.Context, q *db.Queries) ([]morph.Combo, error) {
+	rows, err := q.ListAllMorphCombosWithTraits(ctx)
+	if err != nil {
+		return nil, err
+	}
+	type entry struct {
+		idx   int
+		combo morph.Combo
+	}
+	byID := map[int32]*entry{}
+	order := []int32{}
+	for _, r := range rows {
+		if _, ok := byID[r.ComboID]; !ok {
+			byID[r.ComboID] = &entry{idx: len(order), combo: morph.Combo{Name: r.ComboName}}
+			order = append(order, r.ComboID)
+		}
+		byID[r.ComboID].combo.Requirements = append(byID[r.ComboID].combo.Requirements, morph.ComboRequirement{
+			TraitID:          r.TraitID,
+			RequiredZygosity: r.RequiredZygosity,
+		})
+	}
+	out := make([]morph.Combo, len(order))
+	for _, id := range order {
+		e := byID[id]
+		out[e.idx] = e.combo
+	}
+	return out, nil
+}
+
+func listGeckoGenesToMorphRows(genes []db.ListGeckoGenesRow) map[int32][]morph.GeneRow {
+	out := map[int32][]morph.GeneRow{}
+	for _, g := range genes {
+		out[g.GeckoID] = append(out[g.GeckoID], morph.GeneRow{
+			TraitID:         g.TraitID,
+			TraitName:       g.TraitName,
+			InheritanceType: g.InheritanceType,
+			Zygosity:        g.Zygosity,
+			SuperFormName:   textOrEmpty(g.SuperFormName),
+		})
+	}
+	return out
+}
+
+func listGenesForGeckoToMorphRows(genes []db.ListGenesForGeckoRow) []morph.GeneRow {
+	out := make([]morph.GeneRow, 0, len(genes))
+	for _, g := range genes {
+		out = append(out, morph.GeneRow{
+			TraitID:         g.TraitID,
+			TraitName:       g.TraitName,
+			InheritanceType: g.InheritanceType,
+			Zygosity:        g.Zygosity,
+			SuperFormName:   textOrEmpty(g.SuperFormName),
+		})
+	}
+	return out
+}
 
 func (d *geckosDeps) listSpecies(w http.ResponseWriter, r *http.Request) {
 	rows, err := d.q.ListSpecies(r.Context())
@@ -137,12 +202,16 @@ func (d *geckosDeps) listTraits(w http.ResponseWriter, r *http.Request) {
 		out = make([]traitDTO, 0, len(rows))
 		for _, t := range rows {
 			out = append(out, traitDTO{
-				ID:          t.ID,
-				SpeciesID:   t.SpeciesID,
-				TraitName:   t.TraitName,
-				TraitCode:   textOrEmpty(t.TraitCode),
-				Description: textOrEmpty(t.Description),
-				IsDominant:  t.IsDominant,
+				ID:              t.ID,
+				SpeciesID:       t.SpeciesID,
+				TraitName:       t.TraitName,
+				TraitCode:       textOrEmpty(t.TraitCode),
+				Description:     textOrEmpty(t.Description),
+				IsDominant:      t.IsDominant,
+				InheritanceType: string(t.InheritanceType),
+				SuperFormName:   textOrEmpty(t.SuperFormName),
+				ExamplePhotoUrl: textOrEmpty(t.ExamplePhotoUrl),
+				Notes:           textOrEmpty(t.Notes),
 			})
 		}
 	} else {
@@ -154,12 +223,16 @@ func (d *geckosDeps) listTraits(w http.ResponseWriter, r *http.Request) {
 		out = make([]traitDTO, 0, len(rows))
 		for _, t := range rows {
 			out = append(out, traitDTO{
-				ID:          t.ID,
-				SpeciesID:   t.SpeciesID,
-				TraitName:   t.TraitName,
-				TraitCode:   textOrEmpty(t.TraitCode),
-				Description: textOrEmpty(t.Description),
-				IsDominant:  t.IsDominant,
+				ID:              t.ID,
+				SpeciesID:       t.SpeciesID,
+				TraitName:       t.TraitName,
+				TraitCode:       textOrEmpty(t.TraitCode),
+				Description:     textOrEmpty(t.Description),
+				IsDominant:      t.IsDominant,
+				InheritanceType: string(t.InheritanceType),
+				SuperFormName:   textOrEmpty(t.SuperFormName),
+				ExamplePhotoUrl: textOrEmpty(t.ExamplePhotoUrl),
+				Notes:           textOrEmpty(t.Notes),
 			})
 		}
 	}
@@ -180,14 +253,22 @@ func (d *geckosDeps) listGeckos(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "list genes failed"})
 		return
 	}
+	combos, err := loadCombos(ctx, d.q)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "list combos failed"})
+		return
+	}
+	morphRowsByGecko := listGeckoGenesToMorphRows(allGenes)
 	genesByGecko := map[int32][]geckoGeneDTO{}
 	for _, g := range allGenes {
 		genesByGecko[g.GeckoID] = append(genesByGecko[g.GeckoID], geckoGeneDTO{
-			TraitID:    g.TraitID,
-			TraitName:  g.TraitName,
-			TraitCode:  textOrEmpty(g.TraitCode),
-			Zygosity:   string(g.Zygosity),
-			IsDominant: g.IsDominant,
+			TraitID:         g.TraitID,
+			TraitName:       g.TraitName,
+			TraitCode:       textOrEmpty(g.TraitCode),
+			Zygosity:        string(g.Zygosity),
+			IsDominant:      g.IsDominant,
+			InheritanceType: string(g.InheritanceType),
+			SuperFormName:   textOrEmpty(g.SuperFormName),
 		})
 	}
 
@@ -234,6 +315,7 @@ func (d *geckosDeps) listGeckos(w http.ResponseWriter, r *http.Request) {
 			SireID:        int32OrNil(g.SireID),
 			DamID:         int32OrNil(g.DamID),
 			Notes:         textOrEmpty(g.Notes),
+			MorphLabel:    morph.Detect(morphRowsByGecko[g.ID], combos),
 			CreatedAt:     g.CreatedAt.Time,
 			Traits:        traits,
 			CoverPhotoUrl: cover,
@@ -266,14 +348,22 @@ func (d *geckosDeps) getGecko(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "fetch genes failed"})
 		return
 	}
+	combos, err := loadCombos(ctx, d.q)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "list combos failed"})
+		return
+	}
+	morphRows := listGenesForGeckoToMorphRows(genes)
 	traitsOut := make([]geckoGeneDTO, 0, len(genes))
 	for _, g := range genes {
 		traitsOut = append(traitsOut, geckoGeneDTO{
-			TraitID:    g.TraitID,
-			TraitName:  g.TraitName,
-			TraitCode:  textOrEmpty(g.TraitCode),
-			Zygosity:   string(g.Zygosity),
-			IsDominant: g.IsDominant,
+			TraitID:         g.TraitID,
+			TraitName:       g.TraitName,
+			TraitCode:       textOrEmpty(g.TraitCode),
+			Zygosity:        string(g.Zygosity),
+			IsDominant:      g.IsDominant,
+			InheritanceType: string(g.InheritanceType),
+			SuperFormName:   textOrEmpty(g.SuperFormName),
 		})
 	}
 
@@ -311,6 +401,7 @@ func (d *geckosDeps) getGecko(w http.ResponseWriter, r *http.Request) {
 		SireID:        int32OrNil(row.SireID),
 		DamID:         int32OrNil(row.DamID),
 		Notes:         textOrEmpty(row.Notes),
+		MorphLabel:    morph.Detect(morphRows, combos),
 		CreatedAt:     row.CreatedAt.Time,
 		Traits:        traitsOut,
 		CoverPhotoUrl: cover,
