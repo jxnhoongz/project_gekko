@@ -21,6 +21,3 @@ ORDER BY gd.trait_name;
 INSERT INTO gecko_genes (gecko_id, trait_id, zygosity)
 VALUES ($1, $2, $3)
 RETURNING id, gecko_id, trait_id, zygosity, created_at;
-
--- name: DeleteGenesForGecko :exec
-DELETE FROM gecko_genes WHERE gecko_id = $1;
