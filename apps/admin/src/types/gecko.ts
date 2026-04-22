@@ -1,3 +1,6 @@
+import type { InheritanceType } from './morph';
+export type { InheritanceType };
+
 export type Sex = 'M' | 'F' | 'U';
 export type Zygosity = 'HOM' | 'HET' | 'POSS_HET';
 export type GeckoStatus =
@@ -23,6 +26,10 @@ export interface Trait {
   trait_code: string;
   description: string;
   is_dominant: boolean;
+  inheritance_type: InheritanceType;
+  super_form_name: string;
+  example_photo_url: string;
+  notes: string;
 }
 
 export interface GeckoTrait {
@@ -31,6 +38,8 @@ export interface GeckoTrait {
   trait_code: string;
   zygosity: Zygosity;
   is_dominant: boolean;
+  inheritance_type: InheritanceType;
+  super_form_name: string;
 }
 
 export interface GeckoPhoto {
@@ -55,27 +64,11 @@ export interface Gecko {
   sire_id: number | null;
   dam_id: number | null;
   notes: string;
+  morph_label: string;
   created_at: string;
   traits: GeckoTrait[];
   cover_photo_url: string | null;
   photos?: GeckoPhoto[];
-}
-
-/** Derive a human-readable morph string from trait list. Null-safe. */
-export function morphFromTraits(traits: GeckoTrait[] | null | undefined): string {
-  const list = traits ?? [];
-  if (!list.length) return 'Normal';
-  const hom = list.filter((t) => t.zygosity === 'HOM').map((t) => t.trait_name);
-  const het = list.filter((t) => t.zygosity === 'HET').map((t) => t.trait_name);
-  const possHet = list
-    .filter((t) => t.zygosity === 'POSS_HET')
-    .map((t) => t.trait_name);
-
-  const parts: string[] = [];
-  if (hom.length) parts.push(hom.join(' '));
-  if (het.length) parts.push(het.map((n) => `het ${n}`).join(' '));
-  if (possHet.length) parts.push(possHet.map((n) => `poss. het ${n}`).join(' '));
-  return parts.join(', ') || 'Normal';
 }
 
 export const SEX_LABEL: Record<Sex, string> = {
