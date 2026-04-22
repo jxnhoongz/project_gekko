@@ -35,7 +35,7 @@ export function useMorphCombos(speciesCode?: MaybeRef<string>) {
 
 export function useMorphCombo(id: MaybeRef<number | string | null>) {
   return useQuery({
-    queryKey: morphComboKeys.detail(unref(id) ?? 0),
+    queryKey: () => morphComboKeys.detail(unref(id) ?? 0),
     queryFn: async () => {
       const v = unref(id);
       if (!v) throw new Error('no id');
