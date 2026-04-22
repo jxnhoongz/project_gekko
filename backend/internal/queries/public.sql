@@ -36,12 +36,15 @@ WHERE g.code = $1
 LIMIT 1;
 
 -- name: ListPublicGenesByGeckoIDs :many
--- Used to compose morphs for the list endpoint in one round trip.
+-- Used to compose morph labels for the list endpoint in one round trip.
 SELECT
   gg.gecko_id,
+  gd.id        AS trait_id,
   gd.trait_name,
   gd.trait_code,
-  gg.zygosity
+  gg.zygosity,
+  gd.inheritance_type,
+  gd.super_form_name
 FROM gecko_genes gg
 JOIN genetic_dictionary gd ON gd.id = gg.trait_id
 WHERE gg.gecko_id = ANY($1::int[])
