@@ -16,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/jxnhoongz/project_gekko/backend/internal/db"
+	"github.com/jxnhoongz/project_gekko/backend/internal/morph"
 )
 
 // MountPublic mounts the storefront-facing endpoints (no auth). One endpoint
@@ -92,6 +93,12 @@ func (d *publicDeps) listAvailable(w http.ResponseWriter, r *http.Request) {
 		genesByGecko[g.GeckoID] = append(genesByGecko[g.GeckoID], g)
 	}
 
+	combos, err := loadCombos(ctx, d.q)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "list combos failed"})
+		return
+	}
+
 	covers, err := d.q.ListPublicMediaByGeckoIDs(ctx, ids)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "list covers failed"})
@@ -109,7 +116,7 @@ func (d *publicDeps) listAvailable(w http.ResponseWriter, r *http.Request) {
 			Name:          textOrEmpty(g.Name),
 			SpeciesCode:   string(g.SpeciesCode),
 			SpeciesName:   g.SpeciesCommonName,
-			Morph:         composePublicMorph(genesByGecko[g.ID]),
+			Morph:         morph.Detect(publicGenesToMorphRows(genesByGecko[g.ID]), combos),
 			Sex:           string(g.Sex),
 			HatchDate:     dateOrNil(g.HatchDate),
 			ListPriceUsd:  numericOrNil(g.ListPriceUsd),
@@ -146,6 +153,12 @@ func (d *publicDeps) getByCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	combos, err := loadCombos(ctx, d.q)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "list combos failed"})
+		return
+	}
+
 	photos, err := d.q.ListMediaForGecko(ctx, pgtype.Int4{Int32: row.ID, Valid: true})
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "list media failed"})
@@ -171,7 +184,7 @@ func (d *publicDeps) getByCode(w http.ResponseWriter, r *http.Request) {
 			Name:          textOrEmpty(row.Name),
 			SpeciesCode:   string(row.SpeciesCode),
 			SpeciesName:   row.SpeciesCommonName,
-			Morph:         composePublicMorph(genes),
+			Morph:         morph.Detect(publicGenesToMorphRows(genes), combos),
 			Sex:           string(row.Sex),
 			HatchDate:     dateOrNil(row.HatchDate),
 			ListPriceUsd:  numericOrNil(row.ListPriceUsd),
@@ -249,45 +262,18 @@ func (d *publicDeps) createWaitlist(w http.ResponseWriter, r *http.Request) {
 
 // ---- helpers ----
 
-// composePublicMorph mirrors admin's morphFromTraits in Go so the public
-// storefront stays free of genetics business logic.
-func composePublicMorph(rows []db.ListPublicGenesByGeckoIDsRow) string {
-	if len(rows) == 0 {
-		return "Normal"
-	}
-	var hom, het, poss []string
+func publicGenesToMorphRows(rows []db.ListPublicGenesByGeckoIDsRow) []morph.GeneRow {
+	out := make([]morph.GeneRow, 0, len(rows))
 	for _, r := range rows {
-		switch r.Zygosity {
-		case db.ZygosityHOM:
-			hom = append(hom, r.TraitName)
-		case db.ZygosityHET:
-			het = append(het, r.TraitName)
-		case db.ZygosityPOSSHET:
-			poss = append(poss, r.TraitName)
-		}
+		out = append(out, morph.GeneRow{
+			TraitID:         r.TraitID,
+			TraitName:       r.TraitName,
+			InheritanceType: r.InheritanceType,
+			Zygosity:        r.Zygosity,
+			SuperFormName:   textOrEmpty(r.SuperFormName),
+		})
 	}
-	parts := []string{}
-	if len(hom) > 0 {
-		parts = append(parts, strings.Join(hom, " "))
-	}
-	if len(het) > 0 {
-		prefixed := make([]string, len(het))
-		for i, n := range het {
-			prefixed[i] = "het " + n
-		}
-		parts = append(parts, strings.Join(prefixed, " "))
-	}
-	if len(poss) > 0 {
-		prefixed := make([]string, len(poss))
-		for i, n := range poss {
-			prefixed[i] = "poss. het " + n
-		}
-		parts = append(parts, strings.Join(prefixed, " "))
-	}
-	if len(parts) == 0 {
-		return "Normal"
-	}
-	return strings.Join(parts, ", ")
+	return out
 }
 
 func coverPtr(m map[int32]string, id int32) *string {
