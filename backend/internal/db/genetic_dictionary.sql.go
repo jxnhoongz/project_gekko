@@ -69,6 +69,49 @@ func (q *Queries) CreateTrait(ctx context.Context, arg CreateTraitParams) (Creat
 	return i, err
 }
 
+const getTraitByID = `-- name: GetTraitByID :one
+SELECT id, species_id, trait_name, trait_code, description, is_dominant,
+       inheritance_type, super_form_name, example_photo_url, notes,
+       created_at, updated_at
+FROM genetic_dictionary
+WHERE id = $1
+`
+
+type GetTraitByIDRow struct {
+	ID              int32            `json:"id"`
+	SpeciesID       int32            `json:"species_id"`
+	TraitName       string           `json:"trait_name"`
+	TraitCode       pgtype.Text      `json:"trait_code"`
+	Description     pgtype.Text      `json:"description"`
+	IsDominant      bool             `json:"is_dominant"`
+	InheritanceType InheritanceType  `json:"inheritance_type"`
+	SuperFormName   pgtype.Text      `json:"super_form_name"`
+	ExamplePhotoUrl pgtype.Text      `json:"example_photo_url"`
+	Notes           pgtype.Text      `json:"notes"`
+	CreatedAt       pgtype.Timestamp `json:"created_at"`
+	UpdatedAt       pgtype.Timestamp `json:"updated_at"`
+}
+
+func (q *Queries) GetTraitByID(ctx context.Context, id int32) (GetTraitByIDRow, error) {
+	row := q.db.QueryRow(ctx, getTraitByID, id)
+	var i GetTraitByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.SpeciesID,
+		&i.TraitName,
+		&i.TraitCode,
+		&i.Description,
+		&i.IsDominant,
+		&i.InheritanceType,
+		&i.SuperFormName,
+		&i.ExamplePhotoUrl,
+		&i.Notes,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getTraitByNameAndSpecies = `-- name: GetTraitByNameAndSpecies :one
 SELECT id, species_id, trait_name, trait_code, description, is_dominant,
        inheritance_type, super_form_name, example_photo_url, notes,
@@ -229,4 +272,72 @@ func (q *Queries) ListTraitsBySpecies(ctx context.Context, speciesID int32) ([]L
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateTrait = `-- name: UpdateTrait :one
+UPDATE genetic_dictionary
+SET trait_code        = $2,
+    description       = $3,
+    notes             = $4,
+    inheritance_type  = $5,
+    super_form_name   = $6,
+    example_photo_url = $7,
+    updated_at        = NOW()
+WHERE id = $1
+RETURNING id, species_id, trait_name, trait_code, description, is_dominant,
+          inheritance_type, super_form_name, example_photo_url, notes,
+          created_at, updated_at
+`
+
+type UpdateTraitParams struct {
+	ID              int32           `json:"id"`
+	TraitCode       pgtype.Text     `json:"trait_code"`
+	Description     pgtype.Text     `json:"description"`
+	Notes           pgtype.Text     `json:"notes"`
+	InheritanceType InheritanceType `json:"inheritance_type"`
+	SuperFormName   pgtype.Text     `json:"super_form_name"`
+	ExamplePhotoUrl pgtype.Text     `json:"example_photo_url"`
+}
+
+type UpdateTraitRow struct {
+	ID              int32            `json:"id"`
+	SpeciesID       int32            `json:"species_id"`
+	TraitName       string           `json:"trait_name"`
+	TraitCode       pgtype.Text      `json:"trait_code"`
+	Description     pgtype.Text      `json:"description"`
+	IsDominant      bool             `json:"is_dominant"`
+	InheritanceType InheritanceType  `json:"inheritance_type"`
+	SuperFormName   pgtype.Text      `json:"super_form_name"`
+	ExamplePhotoUrl pgtype.Text      `json:"example_photo_url"`
+	Notes           pgtype.Text      `json:"notes"`
+	CreatedAt       pgtype.Timestamp `json:"created_at"`
+	UpdatedAt       pgtype.Timestamp `json:"updated_at"`
+}
+
+func (q *Queries) UpdateTrait(ctx context.Context, arg UpdateTraitParams) (UpdateTraitRow, error) {
+	row := q.db.QueryRow(ctx, updateTrait,
+		arg.ID,
+		arg.TraitCode,
+		arg.Description,
+		arg.Notes,
+		arg.InheritanceType,
+		arg.SuperFormName,
+		arg.ExamplePhotoUrl,
+	)
+	var i UpdateTraitRow
+	err := row.Scan(
+		&i.ID,
+		&i.SpeciesID,
+		&i.TraitName,
+		&i.TraitCode,
+		&i.Description,
+		&i.IsDominant,
+		&i.InheritanceType,
+		&i.SuperFormName,
+		&i.ExamplePhotoUrl,
+		&i.Notes,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

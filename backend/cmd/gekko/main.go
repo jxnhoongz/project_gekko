@@ -70,6 +70,7 @@ func main() {
 	apihttp.MountGeckos(r, pool, signer)
 	apihttp.MountListings(r, pool, signer)
 	apihttp.MountMorphCombos(r, pool, signer)
+	apihttp.MountTraits(r, pool, signer, cfg)
 	apihttp.MountMedia(r, pool, signer, cfg)
 	apihttp.MountDashboard(r, pool, signer)
 	apihttp.MountPublic(r, pool)

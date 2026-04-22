@@ -54,6 +54,7 @@ type Querier interface {
 	GetMorphCombo(ctx context.Context, id int32) (MorphCombo, error)
 	GetSpeciesByCode(ctx context.Context, code SpeciesCode) (Species, error)
 	GetSpeciesByID(ctx context.Context, id int32) (Species, error)
+	GetTraitByID(ctx context.Context, id int32) (GetTraitByIDRow, error)
 	GetTraitByNameAndSpecies(ctx context.Context, arg GetTraitByNameAndSpeciesParams) (GetTraitByNameAndSpeciesRow, error)
 	InsertMorphComboTrait(ctx context.Context, arg InsertMorphComboTraitParams) error
 	// Bulk load for DetectMorph — one round trip fetches the full combo catalog.
@@ -98,6 +99,7 @@ type Querier interface {
 	UpdateMediaCaptionAndOrder(ctx context.Context, arg UpdateMediaCaptionAndOrderParams) (Medium, error)
 	UpdateMediaDisplayOrder(ctx context.Context, arg UpdateMediaDisplayOrderParams) (Medium, error)
 	UpdateMorphCombo(ctx context.Context, arg UpdateMorphComboParams) (MorphCombo, error)
+	UpdateTrait(ctx context.Context, arg UpdateTraitParams) (UpdateTraitRow, error)
 }
 
 var _ Querier = (*Queries)(nil)
