@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { Edit2, AlertTriangle } from 'lucide-vue-next';
+import { Edit2, Eye, AlertTriangle } from 'lucide-vue-next';
 import { useTraits, useSpecies } from '@/composables/useGeckos';
 import TraitEditSheet from '@/components/TraitEditSheet.vue';
-import type { Trait } from '@/types/gecko';
+import TraitDetailSheet from '@/components/TraitDetailSheet.vue';
+import type { Trait, Species } from '@/types/gecko';
 import type { InheritanceType } from '@/types/morph';
 
 const { data: species } = useSpecies();
@@ -11,12 +12,24 @@ const selectedSpeciesId = ref<number | null>(null);
 
 const { data: traits, isLoading } = useTraits(selectedSpeciesId);
 
+const speciesById = computed<Record<number, Species>>(() =>
+  Object.fromEntries((species.value ?? []).map((s) => [s.id, s])),
+);
+
 const sheetOpen = ref(false);
 const editing = ref<Trait | null>(null);
+
+const detailOpen = ref(false);
+const viewing = ref<Trait | null>(null);
 
 function openEdit(trait: Trait) {
   editing.value = trait;
   sheetOpen.value = true;
+}
+
+function openDetail(trait: Trait) {
+  viewing.value = trait;
+  detailOpen.value = true;
 }
 
 const INHERITANCE_BADGE: Record<InheritanceType, { label: string; class: string }> = {
@@ -56,6 +69,7 @@ function hasHealthWarning(t: Trait) {
         <thead>
           <tr class="bg-brand-cream-100 border-b border-brand-cream-300">
             <th class="text-left px-4 py-3 font-semibold text-brand-dark-700">Trait</th>
+            <th class="text-left px-4 py-3 font-semibold text-brand-dark-700">Species</th>
             <th class="text-left px-4 py-3 font-semibold text-brand-dark-700">Code</th>
             <th class="text-left px-4 py-3 font-semibold text-brand-dark-700">Inheritance</th>
             <th class="text-left px-4 py-3 font-semibold text-brand-dark-700">Super Form</th>
@@ -68,20 +82,25 @@ function hasHealthWarning(t: Trait) {
             :key="t.id"
             class="border-b border-brand-cream-200 last:border-0 hover:bg-brand-cream-50 transition-colors"
           >
-            <td class="px-4 py-3 font-medium text-brand-dark-950 flex items-center gap-2">
-              <img
-                v-if="t.example_photo_url"
-                :src="t.example_photo_url"
-                class="w-7 h-7 rounded object-cover border border-brand-cream-200 shrink-0"
-                alt=""
-              />
-              <span class="w-7 h-7 shrink-0" v-else />
-              {{ t.trait_name }}
-              <AlertTriangle
-                v-if="hasHealthWarning(t)"
-                class="w-3.5 h-3.5 text-amber-500 shrink-0"
-                :title="t.notes"
-              />
+            <td class="px-4 py-3 font-medium text-brand-dark-950">
+              <div class="flex items-center gap-2">
+                <img
+                  v-if="t.example_photo_url"
+                  :src="t.example_photo_url"
+                  class="w-7 h-7 rounded object-cover border border-brand-cream-200 shrink-0"
+                  alt=""
+                />
+                <span v-else class="w-7 h-7 shrink-0" />
+                {{ t.trait_name }}
+                <AlertTriangle
+                  v-if="hasHealthWarning(t)"
+                  class="w-3.5 h-3.5 text-amber-500 shrink-0"
+                  :title="t.notes"
+                />
+              </div>
+            </td>
+            <td class="px-4 py-3 text-brand-dark-600 font-mono text-xs">
+              {{ speciesById[t.species_id]?.code ?? '—' }}
             </td>
             <td class="px-4 py-3 text-brand-dark-600 font-mono text-xs">{{ t.trait_code || '—' }}</td>
             <td class="px-4 py-3">
@@ -94,13 +113,22 @@ function hasHealthWarning(t: Trait) {
             </td>
             <td class="px-4 py-3 text-brand-dark-600 text-xs">{{ t.super_form_name || '—' }}</td>
             <td class="px-4 py-3">
-              <button
-                :aria-label="`Edit ${t.trait_name}`"
-                class="p-1 text-brand-dark-500 hover:text-brand-dark-950 rounded"
-                @click="openEdit(t)"
-              >
-                <Edit2 class="w-4 h-4" />
-              </button>
+              <div class="flex items-center gap-1">
+                <button
+                  :aria-label="`View ${t.trait_name}`"
+                  class="p-1 text-brand-dark-500 hover:text-brand-dark-950 rounded"
+                  @click="openDetail(t)"
+                >
+                  <Eye class="w-4 h-4" />
+                </button>
+                <button
+                  :aria-label="`Edit ${t.trait_name}`"
+                  class="p-1 text-brand-dark-500 hover:text-brand-dark-950 rounded"
+                  @click="openEdit(t)"
+                >
+                  <Edit2 class="w-4 h-4" />
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -108,5 +136,11 @@ function hasHealthWarning(t: Trait) {
     </div>
 
     <TraitEditSheet v-model:open="sheetOpen" :trait="editing" />
+    <TraitDetailSheet
+      v-model:open="detailOpen"
+      v-model="viewing"
+      :traits="traits ?? []"
+      :species-by-id="speciesById"
+    />
   </div>
 </template>
