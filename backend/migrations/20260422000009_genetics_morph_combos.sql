@@ -93,6 +93,9 @@ CREATE TABLE morph_combo_traits (
 );
 CREATE INDEX morph_combo_traits_trait_idx ON morph_combo_traits (trait_id);
 
+-- Unique code per species (partial — allows NULL codes).
+CREATE UNIQUE INDEX morph_combos_code_idx ON morph_combos (species_id, code) WHERE code IS NOT NULL;
+
 -- Seed LP combos.
 INSERT INTO morph_combos (species_id, name, code) VALUES
   ((SELECT id FROM species WHERE code = 'LP'), 'Raptor',           'RAPT'),
@@ -140,6 +143,7 @@ WHERE species_id = (SELECT id FROM species WHERE code = 'LP')
 
 -- +goose Down
 -- +goose StatementBegin
+DROP INDEX IF EXISTS morph_combos_code_idx;
 DROP TABLE IF EXISTS morph_combo_traits;
 DROP TABLE IF EXISTS morph_combos;
 
@@ -148,6 +152,17 @@ INSERT INTO genetic_dictionary (species_id, trait_name, trait_code, description,
   ((SELECT id FROM species WHERE code = 'LP'), 'Raptor',     'RAPT',  'Combo: Tremper Albino + Eclipse.', FALSE),
   ((SELECT id FROM species WHERE code = 'LP'), 'Super Snow', 'SSNOW', 'Homozygous Mack Snow.',             TRUE)
 ON CONFLICT DO NOTHING;
+
+-- Remove traits added by this migration's Up.
+DELETE FROM genetic_dictionary
+WHERE (species_id, trait_name) IN (
+  ((SELECT id FROM species WHERE code = 'LP'), 'Marble Eye'),
+  ((SELECT id FROM species WHERE code = 'LP'), 'Giant'),
+  ((SELECT id FROM species WHERE code = 'LP'), 'Lemon Frost'),
+  ((SELECT id FROM species WHERE code = 'LP'), 'Carrot Tail'),
+  ((SELECT id FROM species WHERE code = 'LP'), 'Baldy'),
+  ((SELECT id FROM species WHERE code = 'LP'), 'Melanistic / Black Night')
+);
 
 ALTER TABLE genetic_dictionary
   DROP COLUMN IF EXISTS inheritance_type,
