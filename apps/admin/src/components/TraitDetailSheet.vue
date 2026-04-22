@@ -150,7 +150,7 @@ const t = computed(() => props.modelValue);
             <p class="text-sm text-brand-dark-800 leading-relaxed">{{ t.description }}</p>
           </div>
 
-          <div v-if="t?.notes && !hasHealthWarning(t)">
+          <div v-if="t?.notes">
             <p class="text-xs text-brand-dark-600 mb-1">Notes</p>
             <p class="text-sm text-brand-dark-800 leading-relaxed">{{ t.notes }}</p>
           </div>
