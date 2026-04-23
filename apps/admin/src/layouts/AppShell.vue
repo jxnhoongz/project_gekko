@@ -3,7 +3,6 @@ import { ref, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import {
   LayoutDashboard,
-  Turtle,
   Tag,
   ClipboardList,
   DollarSign,
@@ -20,6 +19,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import BrandLogo from '@/components/BrandLogo.vue';
 import CommandPalette from '@/components/CommandPalette.vue';
+import GeckoIcon from '@/components/icons/GeckoIcon.vue';
 import { Search } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 
@@ -37,7 +37,7 @@ interface NavItem {
 }
 const nav: NavItem[] = [
   { name: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { name: 'geckos',    label: 'Geckos',    icon: Turtle },
+  { name: 'geckos',    label: 'Geckos',    icon: GeckoIcon },
   { name: 'listings',  label: 'Listings',  icon: Tag },
   { name: 'waitlist',  label: 'Waitlist',  icon: ClipboardList },
   { name: 'sales',     label: 'Sales',     icon: DollarSign },

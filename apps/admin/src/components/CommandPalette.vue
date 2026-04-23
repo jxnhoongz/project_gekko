@@ -7,9 +7,9 @@ import {
   DialogOverlay,
   DialogContent,
 } from 'reka-ui';
+import type { Component } from 'vue';
 import {
   LayoutDashboard,
-  Turtle,
   ClipboardList,
   DollarSign,
   Image,
@@ -17,6 +17,7 @@ import {
   Settings,
   Search,
 } from 'lucide-vue-next';
+import GeckoIcon from '@/components/icons/GeckoIcon.vue';
 import { useGeckos } from '@/composables/useGeckos';
 import { api } from '@/lib/api';
 import type { SchemaResponse, DbTable } from '@/types/schema';
@@ -26,7 +27,7 @@ interface Item {
   label: string;
   hint: string;
   group: string;
-  icon: typeof LayoutDashboard;
+  icon: Component;
   go: () => void;
 }
 
@@ -54,9 +55,9 @@ async function loadTables() {
 }
 
 function iconFor(name: string) {
-  const map: Record<string, typeof LayoutDashboard> = {
+  const map: Record<string, Component> = {
     dashboard: LayoutDashboard,
-    geckos: Turtle,
+    geckos: GeckoIcon,
     waitlist: ClipboardList,
     sales: DollarSign,
     photos: Image,
@@ -96,7 +97,7 @@ const baseItems = computed<Item[]>(() => {
       label: g.name || g.code,
       hint: `${g.code} · ${g.species_name} · ${morph}`,
       group: 'Geckos',
-      icon: Turtle,
+      icon: GeckoIcon,
       go: () => router.push({ name: 'gecko-detail', params: { id: g.id } }),
     });
   }

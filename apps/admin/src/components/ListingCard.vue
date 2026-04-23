@@ -2,7 +2,8 @@
 import { computed } from 'vue';
 import { Card } from '@/components/ui/card';
 import { Badge, type BadgeVariants } from '@/components/ui/badge';
-import { Turtle, Package, Boxes } from 'lucide-vue-next';
+import { Package, Boxes } from 'lucide-vue-next';
+import GeckoIcon from '@/components/icons/GeckoIcon.vue';
 import LowPolyGecko from '@/components/art/LowPolyGecko.vue';
 import type { Listing, ListingStatus, ListingType } from '@/types/listing';
 import { LISTING_STATUS_LABEL, LISTING_TYPE_LABEL } from '@/types/listing';
@@ -11,7 +12,7 @@ const props = defineProps<{ listing: Listing }>();
 const emit = defineEmits<{ (e: 'edit', l: Listing): void }>();
 
 const typeIcon = computed(() => {
-  const map = { GECKO: Turtle, PACKAGE: Package, SUPPLY: Boxes } as const;
+  const map = { GECKO: GeckoIcon, PACKAGE: Package, SUPPLY: Boxes } as const;
   return map[props.listing.type];
 });
 

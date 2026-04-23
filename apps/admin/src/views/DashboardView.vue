@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
+import type { Component } from 'vue';
 import {
-  Turtle,
   Heart,
   Egg,
   ClipboardList,
@@ -12,7 +12,7 @@ import {
   Pause,
   AlertTriangle,
 } from 'lucide-vue-next';
-import type { LucideIcon } from 'lucide-vue-next';
+import GeckoIcon from '@/components/icons/GeckoIcon.vue';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -45,17 +45,17 @@ const needsAttention = computed<DashboardItem[]>(() => data.value?.needs_attenti
 const recentActivity = computed<DashboardItem[]>(() => data.value?.recent_activity ?? []);
 const stats = computed(() => data.value?.stats);
 
-const attentionIcon: Record<DashboardItemKind, LucideIcon> = {
+const attentionIcon: Record<DashboardItemKind, Component> = {
   waitlist_stale:   ClipboardList,
   hold_stale:       Pause,
   // unused in this panel but typed for completeness
-  gecko_created:    Turtle,
+  gecko_created:    GeckoIcon,
   waitlist_created: ClipboardList,
   media_uploaded:   ImageIcon,
 };
 
-const activityIcon: Record<DashboardItemKind, LucideIcon> = {
-  gecko_created:    Turtle,
+const activityIcon: Record<DashboardItemKind, Component> = {
+  gecko_created:    GeckoIcon,
   waitlist_created: ClipboardList,
   media_uploaded:   ImageIcon,
   // unused in this panel but typed for completeness
@@ -115,7 +115,7 @@ function linkFor(item: DashboardItem) {
       <StatCard
         label="Total geckos"
         :value="stats.total_geckos"
-        :icon="Turtle"
+        :icon="GeckoIcon"
         :delta="`${stats.breeding} breeding`"
         delta-tone="up"
         hint="Active in collection"

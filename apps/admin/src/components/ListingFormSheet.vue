@@ -9,7 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { X, Plus, Trash2, Info, Turtle, Boxes, Package } from 'lucide-vue-next';
+import type { Component } from 'vue';
+import { X, Plus, Trash2, Info, Boxes, Package } from 'lucide-vue-next';
+import GeckoIcon from '@/components/icons/GeckoIcon.vue';
 import {
   useCreateListing, useUpdateListing, useListing,
 } from '@/composables/useListings';
@@ -174,10 +176,10 @@ const showGeckoPicker = ref(false);
 const showComponentPicker = ref(false);
 
 const statuses: ListingStatus[] = ['DRAFT', 'LISTED', 'RESERVED', 'SOLD', 'ARCHIVED'];
-const typeOptions: { value: ListingType; icon: typeof Turtle; label: string }[] = [
-  { value: 'GECKO',   icon: Turtle,  label: 'Gecko' },
-  { value: 'SUPPLY',  icon: Boxes,   label: 'Supply' },
-  { value: 'PACKAGE', icon: Package, label: 'Package' },
+const typeOptions: { value: ListingType; icon: Component; label: string }[] = [
+  { value: 'GECKO',   icon: GeckoIcon, label: 'Gecko' },
+  { value: 'SUPPLY',  icon: Boxes,     label: 'Supply' },
+  { value: 'PACKAGE', icon: Package,   label: 'Package' },
 ];
 </script>
 
